@@ -28,8 +28,17 @@ type User struct {
 }
 
 // CreateUser 创建一个新用户
-func CreateUser(db *gorm.DB, user *User) error {
-	return db.Create(user).Error
+func CreateUser(db *gorm.DB, user *User) (*User, error) {
+	return user, db.Create(user).Error
+}
+
+// GetUserByID 通过 ID 查找一个用户
+//
+// Throw: gorm.ErrRecordNotFound
+func GetUserByID(db *gorm.DB, userID int) (*User, error) {
+	u := new(User)
+	err := db.First(u, userID).Error
+	return u, err
 }
 
 // DeleteUser 软删除一个用户，带 cascade
@@ -39,7 +48,7 @@ func DeleteUser(db *gorm.DB, userID int) error {
 
 // UpdateFrom 根据主键，从数据库中获取数据
 func (user *User) UpdateFrom(db *gorm.DB) error {
-	return db.Model(user).First(user).Error
+	return db.First(user, user.ID).Error
 }
 
 // UpdateTo 根据主键，写入到数据库

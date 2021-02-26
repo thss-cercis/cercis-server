@@ -1,20 +1,27 @@
 package db
 
 import (
+	"fmt"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"github.com/thss-cercis/cercis-server/config"
 	"github.com/thss-cercis/cercis-server/db/user"
 )
 
 var dbNow *gorm.DB = nil
 
-const sqlString = "host=localhost user=postgres password=86132292 dbname=cercis port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+const connectStr = "host=%v user=%v password=%v dbname=%v port=%v sslmode=%v TimeZone=%v"
 
 // GetDB 获得数据库
 func GetDB() *gorm.DB {
 	if dbNow == nil {
-		db, err := gorm.Open(postgres.Open(sqlString), &gorm.Config{})
+		cp := config.GetConfig().Postgres
+		db, err := gorm.Open(
+			postgres.Open(fmt.Sprintf(connectStr, cp.Host, cp.User, cp.Password, cp.Dbname, cp.Port, cp.Sslmode, cp.Timezone)),
+			&gorm.Config{},
+		)
 		if err != nil {
 			panic(err)
 		}

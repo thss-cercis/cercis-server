@@ -27,7 +27,7 @@ func CreateFriendEntry(db *gorm.DB, selfID int, friendID int, alias string) erro
 
 // DeleteFriendEntryByID 删除一个单项好友项目
 func DeleteFriendEntryByID(db *gorm.DB, entryID int) error {
-	return db.Delete(&FriendEntry{Model: base.Model{ID: entryID}}).Error
+	return db.Delete(&FriendEntry{}, entryID).Error
 }
 
 // DeleteFriendEntry 删除一个单项好友项目
