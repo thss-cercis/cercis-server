@@ -24,7 +24,7 @@ var store *session.Store
 // GetStore 获得 redis 数据库连接
 func GetStore() *session.Store {
 	if store == nil {
-		cr := config.GetConfig().Redis
+		cr := config.GetConfig().Redis.Session
 		storage := redis.New(redis.Config{
 			Host:     cr.Host,
 			Port:     cr.Port,

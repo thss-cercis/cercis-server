@@ -1,12 +1,13 @@
 redis:
-  host: "127.0.0.1"
-  port: 6379
-  username: ""
-  password: ""
-  # 选择数据库
-  database: 7
-  # 连接时是否重置
-  reset: true
+  session:
+    host: "127.0.0.1"
+    port: 6379
+    username: ""
+    password: ""
+    # 选择数据库
+    database: 7
+    # 连接时是否重置
+    reset: false
 postgres:
   host: "localhost"
   port: 5432

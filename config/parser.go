@@ -9,12 +9,14 @@ import (
 // Config 全局设置结构体
 type Config struct {
 	Redis struct {
-		Host     string
-		Port     int
-		Username string
-		Password string
-		Database int
-		Reset    bool
+		Session struct {
+			Host     string
+			Port     int
+			Username string
+			Password string
+			Database int
+			Reset    bool
+		}
 	}
 	Postgres struct {
 		Host     string
