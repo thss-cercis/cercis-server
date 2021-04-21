@@ -66,7 +66,7 @@ func RedisSessionAuthenticate(c *fiber.Ctx) error {
 	rawUserID := sess.Get("user_id")
 	_, ok := rawUserID.(int)
 	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: "未登陆"})
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: "未登录"})
 	}
 	return c.Next()
 }

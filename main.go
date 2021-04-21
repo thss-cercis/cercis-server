@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/thss-cercis/cercis-server/api/auth"
+	userApi "github.com/thss-cercis/cercis-server/api/user"
 	"github.com/thss-cercis/cercis-server/config"
 	"github.com/thss-cercis/cercis-server/db"
 	"github.com/thss-cercis/cercis-server/middleware"
@@ -35,8 +36,12 @@ func main() {
 	v1.Post("/auth/logout", middleware.RedisSessionAuthenticate, auth.Logout)
 	v1.Post("/auth/signup", auth.Signup)
 
+	// user
+	user := v1.Group("/user", middleware.RedisSessionAuthenticate)
+	user.Get("/current", userApi.Current)
+
 	// chat
 	// chat := v1.Group("/chat", middleware.RedisSessionAuthenticate)
 
-	app.Listen("localhost:9191")
+	app.Listen("0.0.0.0:9191")
 }

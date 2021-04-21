@@ -40,11 +40,6 @@ func Login(c *fiber.Ctx) error {
 	if err != nil {
 		panic(err)
 	}
-	// 已经登陆
-	_, ok := sess.Get("user_id").(int)
-	if ok {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserAlreadyLogin, Msg: "已经登陆"})
-	}
 	// 设置新 user_id
 	sess.Set("user_id", u.ID)
 	if err = sess.Save(); err != nil {
