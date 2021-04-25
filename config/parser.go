@@ -8,6 +8,10 @@ import (
 
 // Config 全局设置结构体
 type Config struct {
+	Server struct {
+		Host string
+		Port int
+	}
 	Redis struct {
 		Session struct {
 			Host     string

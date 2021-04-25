@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -22,6 +23,7 @@ func main() {
 	}
 	// 初始化
 	config.Init(*configPath)
+	cf := config.GetConfig()
 
 	// 自动迁移数据库
 	db.AutoMigrate()
@@ -43,5 +45,8 @@ func main() {
 	// chat
 	// chat := v1.Group("/chat", middleware.RedisSessionAuthenticate)
 
-	app.Listen("0.0.0.0:9191")
+	err := app.Listen(fmt.Sprintf("%s:%d", cf.Server.Host, cf.Server.Port))
+	if err != nil {
+		panic(err)
+	}
 }
