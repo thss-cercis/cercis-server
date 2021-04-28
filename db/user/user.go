@@ -18,13 +18,13 @@ type User struct {
 	base.Model
 	NickName string `gorm:"type:varChar(255) not null" json:"nickname"`
 	Email    string `gorm:"type:varChar(255) not null" json:"email"`
-	Mobile   string `gorm:"type:varChar(31) not null" json:"mobile"`
+	Mobile   string `gorm:"type:varChar(31) not null;uniqueIndex:idx_mobile" json:"mobile"`
 	Avatar   string `gorm:"type:varChar(255) not null" json:"avatar"`
 	Bio      string `gorm:"type:text not null" json:"bio"`
-	Password string `gorm:"type:text not null"`
+	Password string `gorm:"type:text not null" json:"-"`
 	Meta
 	// 好友列表项
-	FriendEntrys []FriendEntry `gorm:"foreignKey:SelfID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	FriendEntrys []FriendEntry `gorm:"foreignKey:SelfID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"-"`
 }
 
 // CreateUser 创建一个新用户
@@ -39,6 +39,21 @@ func GetUserByID(db *gorm.DB, userID int) (*User, error) {
 	u := new(User)
 	err := db.First(u, userID).Error
 	return u, err
+}
+
+// GetUserByMobile 通过 Mobile 查找一个用户
+//
+// Throw: gorm.ErrRecordNotFound
+func GetUserByMobile(db *gorm.DB, mobile string) (*User, error) {
+	u := new(User)
+	err := db.Where("mobile = ?", mobile).First(u).Error
+	return u, err
+}
+
+func GetUserCount(db *gorm.DB) (int64, error) {
+	var cnt int64
+	err := db.Model(&User{}).Count(&cnt).Error
+	return cnt, err
 }
 
 // DeleteUser 软删除一个用户，带 cascade

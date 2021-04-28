@@ -4,6 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+	mobileApi "github.com/thss-cercis/cercis-server/api/mobile"
+	"github.com/thss-cercis/cercis-server/redis"
+	"github.com/thss-cercis/cercis-server/util/sms"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -24,12 +28,16 @@ func main() {
 	// 初始化
 	config.Init(*configPath)
 	cf := config.GetConfig()
+	sms.Init(cf.SMS.Region, cf.SMS.AccessKey, cf.SMS.Secret, cf.SMS.SignName, cf.SMS.TemplateCode)
 
 	// 自动迁移数据库
 	db.AutoMigrate()
 
 	app := fiber.New()
+	// 日志中间件
 	app.Use(logger.New())
+	// 请求序号中间件
+	app.Use(requestid.New())
 
 	v1 := app.Group("/api/v1")
 
@@ -37,15 +45,28 @@ func main() {
 	v1.Post("/auth/login", auth.Login)
 	v1.Post("/auth/logout", middleware.RedisSessionAuthenticate, auth.Logout)
 	v1.Post("/auth/signup", auth.Signup)
+	v1.Post("/auth/recover", userApi.RecoverPassword)
 
 	// user
 	user := v1.Group("/user", middleware.RedisSessionAuthenticate)
-	user.Get("/current", userApi.Current)
+	user.Get("/current", userApi.CurrentUser)
+	user.Post("/modify", userApi.ModifyUser)
+	user.Post("/password", userApi.ModifyPassword)
+
+	// mobile
+	v1.Post("/mobile/signup", mobileApi.SendSMSTemplate(
+		redis.TagSMSSignUp, redis.ExpSMSSignUp, redis.TagSMSSignUpRetry, redis.ExpSMSSignUpRetry,
+	),
+	)
+	v1.Post("/mobile/recover", mobileApi.SendSMSTemplate(
+		redis.TagSMSRecover, redis.ExpSMSRecover, redis.TagSMSRecoverRetry, redis.ExpSMSRecoverRetry,
+	),
+	)
 
 	// chat
 	// chat := v1.Group("/chat", middleware.RedisSessionAuthenticate)
 
-	err := app.Listen(fmt.Sprintf("%s:%d", cf.Server.Host, cf.Server.Port))
+	err := app.Listen(fmt.Sprintf("%v:%v", cf.Server.Host, cf.Server.Port))
 	if err != nil {
 		panic(err)
 	}

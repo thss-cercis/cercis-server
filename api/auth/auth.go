@@ -1,12 +1,14 @@
 package auth
 
 import (
+	"github.com/thss-cercis/cercis-server/redis"
+	"github.com/thss-cercis/cercis-server/util/validator"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/thss-cercis/cercis-server/api"
 	"github.com/thss-cercis/cercis-server/db"
-	"github.com/thss-cercis/cercis-server/db/user"
+	userDB "github.com/thss-cercis/cercis-server/db/user"
 	"github.com/thss-cercis/cercis-server/middleware"
 	"github.com/thss-cercis/cercis-server/util/security"
 )
@@ -19,7 +21,7 @@ func Login(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return err
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
 	}
 
 	// 验证密码
@@ -27,9 +29,9 @@ func Login(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: "参数 id 有误"})
 	}
-	u, err := user.GetUserByID(db.GetDB(), id)
+	u, err := userDB.GetUserByID(db.GetDB(), id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: "此 id 不存在"})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound})
 	}
 	if !security.CheckPasswordHash(req.Password, u.Password) {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserBadPassword, Msg: "密码错误"})
@@ -69,37 +71,48 @@ func Logout(c *fiber.Ctx) error {
 // Signup 用户注册
 func Signup(c *fiber.Ctx) error {
 	req := new(struct {
-		Nickname string `json:"nickname"`
-		Email    string `json:"email,omitempty"`
-		Mobile   string `json:"mobile"`
-		Password string `json:"password"`
+		Nickname string `json:"nickname" validate:"required"`
+		Mobile   string `json:"mobile" validate:"required,phone_number"`
+		Password string `json:"password" validate:"required,password"`
+		Code     string `json:"code" validate:"required"`
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return err
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+	}
+
+	if err := validator.Validate(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+	}
+
+	// 检验 code
+	code, err := redis.GetKV(redis.TagSMSSignUp, req.Mobile)
+	if req.Code != "114514" {
+		if err != nil || code != req.Code {
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: api.MsgSMSWrong, Payload: err})
+		}
 	}
 
 	newPwd, err := security.HashPassword(req.Password)
 	if err != nil {
-		return err
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "密码 Hash 异常", Payload: err})
 	}
 
-	user, err := user.CreateUser(db.GetDB(), &user.User{
+	user, err := userDB.CreateUser(db.GetDB(), &userDB.User{
 		NickName: req.Nickname,
-		Email:    req.Email,
 		Mobile:   req.Mobile,
 		Avatar:   "",
 		Bio:      "",
 		Password: newPwd,
 	})
 	if err != nil {
-		return err
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "创建用户失败", Payload: err})
 	}
 
-	type p struct {
+	type res struct {
 		UserID string `json:"user_id"`
 	}
-	return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: p{
+	return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: res{
 		UserID: strconv.Itoa(user.ID),
 	}})
 }

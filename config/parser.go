@@ -13,14 +13,12 @@ type Config struct {
 		Port int
 	}
 	Redis struct {
-		Session struct {
-			Host     string
-			Port     int
-			Username string
-			Password string
-			Database int
-			Reset    bool
-		}
+		Host     string
+		Port     int
+		Username string
+		Password string
+		Database int
+		Reset    bool
 	}
 	Postgres struct {
 		Host     string
@@ -30,6 +28,13 @@ type Config struct {
 		Dbname   string
 		Sslmode  string
 		Timezone string
+	}
+	SMS struct {
+		Region       string
+		AccessKey    string
+		Secret       string
+		SignName     string
+		TemplateCode string
 	}
 }
 

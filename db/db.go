@@ -39,4 +39,8 @@ func AutoMigrate() {
 	if err != nil {
 		panic(err)
 	}
+	// id of `users` start from 100001
+	if cnt, err := user.GetUserCount(db); err == nil && cnt == 0 {
+		db.Exec("alter sequence users_id_seq restart 100001")
+	}
 }
