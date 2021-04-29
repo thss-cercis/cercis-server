@@ -7,7 +7,6 @@ import (
 	"github.com/thss-cercis/cercis-server/db/user"
 	"github.com/thss-cercis/cercis-server/middleware"
 	"github.com/thss-cercis/cercis-server/util"
-	"github.com/thss-cercis/cercis-server/util/validator"
 )
 
 // GetSendApply 获得自己发送的好友申请
@@ -55,12 +54,12 @@ func SendApply(c *fiber.Ctx) error {
 		ToID int64 `json:"to_id" validate:"required"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -87,12 +86,12 @@ func AcceptApply(c *fiber.Ctx) error {
 		ApplyID int64 `json:"apply_id" validate:"required"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	if err := user.AcceptFriendApply(db.GetDB(), req.ApplyID); err != nil {
@@ -109,12 +108,12 @@ func RejectApply(c *fiber.Ctx) error {
 		ApplyID int64 `json:"apply_id" validate:"required"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	if err := user.RejectFriendApply(db.GetDB(), req.ApplyID); err != nil {
@@ -160,12 +159,12 @@ func ModifyAlias(c *fiber.Ctx) error {
 		Alias    string `json:"alias" validate:"required"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -187,12 +186,12 @@ func DeleteFriend(c *fiber.Ctx) error {
 		FriendID int64 `json:"friend_id" validate:"required"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)

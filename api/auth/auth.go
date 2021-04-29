@@ -9,28 +9,39 @@ import (
 	"github.com/thss-cercis/cercis-server/redis"
 	"github.com/thss-cercis/cercis-server/util"
 	"github.com/thss-cercis/cercis-server/util/security"
-	"github.com/thss-cercis/cercis-server/util/validator"
 )
 
 // Login 用户登录
 func Login(c *fiber.Ctx) error {
 	req := new(struct {
-		ID       int64  `json:"id" validate:"required"`
+		ID       int64  `json:"id" validate:"required_without=Mobile"`
+		Mobile   string `json:"mobile"`
 		Password string `json:"password" validate:"required"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	// 验证密码
-	u, err := userDB.GetUserByID(db.GetDB(), req.ID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
+	var u *userDB.User
+	var err error
+	if req.ID != 0 {
+		// 使用 id
+		u, err = userDB.GetUserByID(db.GetDB(), req.ID)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
+		}
+	} else {
+		// 使用 mobile
+		u, err = userDB.GetUserByMobile(db.GetDB(), req.Mobile)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
+		}
 	}
 	if !security.CheckPasswordHash(req.Password, u.Password) {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserBadPassword, Msg: "密码错误"})
@@ -76,12 +87,12 @@ func Signup(c *fiber.Ctx) error {
 		Code     string `json:"code" validate:"required"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	// 检验 code

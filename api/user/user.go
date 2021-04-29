@@ -9,7 +9,6 @@ import (
 	"github.com/thss-cercis/cercis-server/redis"
 	"github.com/thss-cercis/cercis-server/util"
 	"github.com/thss-cercis/cercis-server/util/security"
-	"github.com/thss-cercis/cercis-server/util/validator"
 )
 
 // CurrentUser 查询当前用户信息的 api
@@ -35,12 +34,12 @@ func ModifyUser(c *fiber.Ctx) error {
 		Bio      string `json:"bio"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -72,7 +71,7 @@ func ModifyUser(c *fiber.Ctx) error {
 
 	err = user.UpdateTo(db.GetDB())
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError("更新用户信息失败", err)})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError("更新用户信息失败", err)})
 	}
 
 	rep := struct {
@@ -92,6 +91,53 @@ func ModifyUser(c *fiber.Ctx) error {
 	return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: rep})
 }
 
+// UserInfo 获取其他用户个人信息
+func UserInfo(c *fiber.Ctx) error {
+	req := new(struct {
+		ID int64 `json:"id" form:"id" validate:"required"`
+	})
+
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
+	}
+
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
+	}
+
+	u, err := userDB.GetUserByID(db.GetDB(), req.ID)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUserNotFound, nil)})
+	}
+
+	type resType struct {
+		NickName string `json:"nickname"`
+		Email    string `json:"email"`
+		Mobile   string `json:"mobile"`
+		Avatar   string `json:"avatar"`
+		Bio      string `json:"bio"`
+	}
+
+	userToResType := func(u *userDB.User) resType {
+		ret := resType{
+			NickName: u.NickName,
+			Email:    u.Email,
+			Avatar:   u.Avatar,
+			Bio:      u.Bio,
+		}
+		if u.AllowShowPhone {
+			ret.Mobile = u.Mobile
+		}
+		return ret
+	}
+
+	return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: struct {
+		User resType `json:"user"`
+	}{
+		User: userToResType(u),
+	}})
+}
+
 // ModifyPassword 修改用户密码
 func ModifyPassword(c *fiber.Ctx) error {
 	req := new(struct {
@@ -99,12 +145,12 @@ func ModifyPassword(c *fiber.Ctx) error {
 		NewPwd string `json:"new_pwd" validate:"required,password"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -143,12 +189,12 @@ func RecoverPassword(c *fiber.Ctx) error {
 		Code   string `json:"code" validate:"required"`
 	})
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	// 检验 code

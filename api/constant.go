@@ -36,8 +36,6 @@ const CodeSuccess = 0
 // CodeBadParam 无效参数或缺少参数
 const CodeBadParam = 1
 
-// 用户相关
-
 // CodeNotLogin 未登录
 const CodeNotLogin = 100
 

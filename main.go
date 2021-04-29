@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	friendApi "github.com/thss-cercis/cercis-server/api/friend"
 	mobileApi "github.com/thss-cercis/cercis-server/api/mobile"
+	searchApi "github.com/thss-cercis/cercis-server/api/search"
 	"github.com/thss-cercis/cercis-server/util/sms"
 
 	"github.com/gofiber/fiber/v2"
@@ -52,6 +53,7 @@ func main() {
 	user.Get("/current", userApi.CurrentUser)
 	user.Put("/modify", userApi.ModifyUser)
 	user.Put("/password", userApi.ModifyPassword)
+	user.Get("/info", userApi.UserInfo)
 
 	// friend
 	friend := v1.Group("/friend", middleware.RedisSessionAuthenticate)
@@ -67,6 +69,10 @@ func main() {
 	// mobile
 	v1.Post("/mobile/signup", mobileApi.SendSMSRegister)
 	v1.Post("/mobile/recover", mobileApi.SendSMSRecover)
+
+	// search
+	search := v1.Group("/search", middleware.RedisSessionAuthenticate)
+	search.Get("/users", searchApi.SearchUser)
 
 	// chat
 	// chat := v1.Group("/chat", middleware.RedisSessionAuthenticate)

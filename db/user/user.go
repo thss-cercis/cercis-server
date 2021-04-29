@@ -4,6 +4,7 @@ package user
 // 用户在数据表的定义
 
 import (
+	"fmt"
 	"github.com/thss-cercis/cercis-server/db/base"
 	"gorm.io/gorm"
 )
@@ -23,9 +24,9 @@ type User struct {
 	Bio      string `gorm:"type:text not null" json:"bio"`
 	Password string `gorm:"type:text not null" json:"-"`
 
-	AllowSearchByName  bool `gorm:"type:boolean not null;default:false" json:"allow_search_by_name"`
-	AllowShowPhone     bool `gorm:"type:boolean not null;default:false" json:"allow_show_phone"`
-	AllowSearchByPhone bool `gorm:"type:boolean not null;default:false" json:"allow_search_by_phone"`
+	AllowSearchByName  bool `gorm:"type:boolean not null;default:true" json:"allow_search_by_name"`
+	AllowShowPhone     bool `gorm:"type:boolean not null;default:true" json:"allow_show_phone"`
+	AllowSearchByPhone bool `gorm:"type:boolean not null;default:true" json:"allow_search_by_phone"`
 	Meta
 	// 好友列表项(自己拥有的好友)
 	FriendEntrySelf []FriendEntry `gorm:"foreignKey:SelfID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
@@ -60,6 +61,13 @@ func GetUserByMobile(db *gorm.DB, mobile string) (*User, error) {
 	return u, err
 }
 
+func GetUserLikeNickName(db *gorm.DB, nickName string) ([]User, error) {
+	var us []User
+	err := db.Where("nick_name LIKE ?", fmt.Sprintf("%%%s%%", nickName)).Find(us).Error
+	return us, err
+}
+
+// GetUserCount 获得当前所有的用户数量
 func GetUserCount(db *gorm.DB) (int64, error) {
 	var cnt int64
 	err := db.Model(&User{}).Count(&cnt).Error

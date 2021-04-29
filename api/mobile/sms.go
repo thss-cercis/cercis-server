@@ -8,7 +8,6 @@ import (
 	"github.com/thss-cercis/cercis-server/redis"
 	"github.com/thss-cercis/cercis-server/util"
 	"github.com/thss-cercis/cercis-server/util/sms"
-	"github.com/thss-cercis/cercis-server/util/validator"
 	"time"
 )
 
@@ -20,12 +19,12 @@ func SendSMSRegister(c *fiber.Ctx) error {
 	// 已经注册过的不可再发短信
 	req := &SMSReq{}
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	if _, err := user.GetUserByMobile(db.GetDB(), req.Mobile); err == nil {
@@ -42,12 +41,12 @@ func SendSMSRecover(c *fiber.Ctx) error {
 	// 已经注册过的不可再发短信
 	req := &SMSReq{}
 
-	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
 	}
 
-	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
 	}
 
 	if _, err := user.GetUserByMobile(db.GetDB(), req.Mobile); err != nil {
@@ -75,13 +74,6 @@ func SendSMSTemplate(req *SMSReq, tag string, exp time.Duration, tagRetry string
 		code := sms.NewRandomCode()
 		res, err := sms.SendSMS(client, req.Mobile, code)
 		if err != nil || res.Code != "OK" {
-			//tmp := struct {
-			//	Response interface{} `json:"response"`
-			//	Error    interface{} `json:"error"`
-			//}{
-			//	Response: res,
-			//	Error:    err,
-			//}
 			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSError, Msg: util.MsgWithError(api.MsgSMSError, err)})
 		}
 
