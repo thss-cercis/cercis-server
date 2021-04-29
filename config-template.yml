@@ -8,8 +8,8 @@ redis:
   password: ""
   # 选择数据库
   database: 7
-  # 连接时是否重置，只影响用户 session
-  reset: false
+  # 连接时是否重置
+  reset: true
 postgres:
   host: "localhost"
   port: 5432

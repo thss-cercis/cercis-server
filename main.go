@@ -50,8 +50,8 @@ func main() {
 	// user
 	user := v1.Group("/user", middleware.RedisSessionAuthenticate)
 	user.Get("/current", userApi.CurrentUser)
-	user.Post("/modify", userApi.ModifyUser)
-	user.Post("/password", userApi.ModifyPassword)
+	user.Put("/modify", userApi.ModifyUser)
+	user.Put("/password", userApi.ModifyPassword)
 
 	// mobile
 	v1.Post("/mobile/signup", mobileApi.SendSMSTemplate(
