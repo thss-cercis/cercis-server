@@ -17,7 +17,7 @@ func CurrentUser(c *fiber.Ctx) error {
 	if ok {
 		user, err := userDB.GetUserByID(db.GetDB(), userId)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound, Payload: err})
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound, Payload: err.Error()})
 		}
 		return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: user})
 	}
@@ -35,7 +35,7 @@ func ModifyUser(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
 	}
 
 	if err := validator.Validate(req); err != nil {
@@ -99,7 +99,7 @@ func ModifyPassword(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
 	}
 
 	if err := validator.Validate(req); err != nil {
@@ -143,7 +143,7 @@ func RecoverPassword(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
 	}
 
 	if err := validator.Validate(req); err != nil {
@@ -152,13 +152,15 @@ func RecoverPassword(c *fiber.Ctx) error {
 
 	// 检验 code
 	code, err := redis.GetKV(redis.TagSMSRecover, req.Mobile)
-	if err != nil || code != req.Code {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: api.MsgSMSWrong, Payload: err})
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: api.MsgSMSWrong, Payload: err.Error()})
+	} else if code != req.Code {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: api.MsgSMSWrong})
 	}
 
 	newPwd, err := security.HashPassword(req.NewPwd)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: "密码 Hash 异常", Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: "密码 Hash 异常", Payload: err.Error()})
 	}
 
 	user, err := userDB.GetUserByMobile(db.GetDB(), req.Mobile)

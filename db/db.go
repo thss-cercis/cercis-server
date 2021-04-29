@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -34,7 +33,7 @@ func GetDB() *gorm.DB {
 func AutoMigrate() {
 	db := GetDB()
 	err := db.Migrator().AutoMigrate(
-		&user.User{}, &user.FriendEntry{},
+		&user.User{}, &user.FriendEntry{}, &user.FriendApply{},
 	)
 	if err != nil {
 		panic(err)

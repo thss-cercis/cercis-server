@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+	friendApi "github.com/thss-cercis/cercis-server/api/friend"
 	mobileApi "github.com/thss-cercis/cercis-server/api/mobile"
 	"github.com/thss-cercis/cercis-server/redis"
 	"github.com/thss-cercis/cercis-server/util/sms"
@@ -52,6 +53,15 @@ func main() {
 	user.Get("/current", userApi.CurrentUser)
 	user.Put("/modify", userApi.ModifyUser)
 	user.Put("/password", userApi.ModifyPassword)
+
+	// friend
+	friend := v1.Group("/friend", middleware.RedisSessionAuthenticate)
+	friend.Get("/send", friendApi.GetSendApply)
+	friend.Get("/receive", friendApi.GetReceiveApply)
+	friend.Post("/send", friendApi.SendApply)
+	friend.Post("/accept", friendApi.AcceptApply)
+	friend.Post("/reject", friendApi.RejectApply)
+	friend.Get("/", friendApi.GetFriends)
 
 	// mobile
 	v1.Post("/mobile/signup", mobileApi.SendSMSTemplate(

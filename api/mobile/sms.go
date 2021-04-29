@@ -16,7 +16,7 @@ func SendSMSTemplate(tag string, exp time.Duration, tagRetry string, expRetry ti
 		})
 
 		if err := c.BodyParser(req); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
 		}
 
 		if err := validator.Validate(req); err != nil {
@@ -48,12 +48,12 @@ func SendSMSTemplate(tag string, exp time.Duration, tagRetry string, expRetry ti
 
 		err = redis.PutKV(tag, req.Mobile, code, exp)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err})
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
 		}
 		// 1 分钟内禁止再索要短信
 		err = redis.PutKV(tagRetry, req.Mobile, code, expRetry)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err})
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
 		}
 
 		return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})

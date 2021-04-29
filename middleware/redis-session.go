@@ -53,9 +53,9 @@ func GetSession(c *fiber.Ctx) *session.Session {
 }
 
 // GetUserIDFromSession 从 ctx 中的 session 中获取当前 userId
-func GetUserIDFromSession(c *fiber.Ctx) (userID int, ok bool) {
+func GetUserIDFromSession(c *fiber.Ctx) (userID int64, ok bool) {
 	sess := GetSession(c)
-	userID, ok = sess.Get("user_id").(int)
+	userID, ok = sess.Get("user_id").(int64)
 	return
 }
 
@@ -64,7 +64,7 @@ func RedisSessionAuthenticate(c *fiber.Ctx) error {
 	sess := GetSession(c)
 	// get user id
 	rawUserID := sess.Get("user_id")
-	_, ok := rawUserID.(int)
+	_, ok := rawUserID.(int64)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: "未登录"})
 	}

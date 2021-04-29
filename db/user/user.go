@@ -23,8 +23,14 @@ type User struct {
 	Bio      string `gorm:"type:text not null" json:"bio"`
 	Password string `gorm:"type:text not null" json:"-"`
 	Meta
-	// 好友列表项
-	FriendEntrys []FriendEntry `gorm:"foreignKey:SelfID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"-"`
+	// 好友列表项(自己拥有的好友)
+	FriendEntrySelf []FriendEntry `gorm:"foreignKey:SelfID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	// 好友列表项(自己作为其他人的好友)
+	FriendEntryFriend []FriendEntry `gorm:"foreignKey:FriendID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	// 好友申请项(自己发出)
+	FriendApplyFrom []FriendApply `gorm:"foreignKey:FromID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	// 好友申请项(自己接收)
+	FriendApplyTo []FriendApply `gorm:"foreignKey:ToID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 }
 
 // CreateUser 创建一个新用户
@@ -35,7 +41,7 @@ func CreateUser(db *gorm.DB, user *User) (*User, error) {
 // GetUserByID 通过 ID 查找一个用户
 //
 // Throw: gorm.ErrRecordNotFound
-func GetUserByID(db *gorm.DB, userID int) (*User, error) {
+func GetUserByID(db *gorm.DB, userID int64) (*User, error) {
 	u := new(User)
 	err := db.First(u, userID).Error
 	return u, err
@@ -57,8 +63,9 @@ func GetUserCount(db *gorm.DB) (int64, error) {
 }
 
 // DeleteUser 软删除一个用户，带 cascade
-func DeleteUser(db *gorm.DB, userID int) error {
-	return db.Select("FriendEntrys").Delete(&User{Model: base.Model{ID: userID}}).Error
+func DeleteUser(db *gorm.DB, userID int64) error {
+	return db.Select("FriendEntrySelf", "FriendEntryFriend", "FriendApplyFrom", "FriendApplyTo").
+		Delete(&User{Model: base.Model{ID: userID}}).Error
 }
 
 // UpdateFrom 根据主键，从数据库中获取数据

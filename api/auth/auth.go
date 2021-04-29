@@ -1,35 +1,33 @@
 package auth
 
 import (
-	"github.com/thss-cercis/cercis-server/redis"
-	"github.com/thss-cercis/cercis-server/util/validator"
-	"strconv"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/thss-cercis/cercis-server/api"
 	"github.com/thss-cercis/cercis-server/db"
 	userDB "github.com/thss-cercis/cercis-server/db/user"
 	"github.com/thss-cercis/cercis-server/middleware"
+	"github.com/thss-cercis/cercis-server/redis"
 	"github.com/thss-cercis/cercis-server/util/security"
+	"github.com/thss-cercis/cercis-server/util/validator"
 )
 
 // Login 用户登录
 func Login(c *fiber.Ctx) error {
 	req := new(struct {
-		ID       string `json:"id"`
-		Password string `json:"password"`
+		ID       int64  `json:"id" validate:"required"`
+		Password string `json:"password" validate:"required"`
 	})
 
 	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+	}
+
+	if err := validator.Validate(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
 	}
 
 	// 验证密码
-	id, err := strconv.Atoi(req.ID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: "参数 id 有误"})
-	}
-	u, err := userDB.GetUserByID(db.GetDB(), id)
+	u, err := userDB.GetUserByID(db.GetDB(), req.ID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound})
 	}
@@ -78,7 +76,7 @@ func Signup(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
 	}
 
 	if err := validator.Validate(req); err != nil {
@@ -89,13 +87,13 @@ func Signup(c *fiber.Ctx) error {
 	code, err := redis.GetKV(redis.TagSMSSignUp, req.Mobile)
 	if req.Code != "114514" {
 		if err != nil || code != req.Code {
-			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: api.MsgSMSWrong, Payload: err})
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: api.MsgSMSWrong, Payload: err.Error()})
 		}
 	}
 
 	newPwd, err := security.HashPassword(req.Password)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "密码 Hash 异常", Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "密码 Hash 异常", Payload: err.Error()})
 	}
 
 	user, err := userDB.CreateUser(db.GetDB(), &userDB.User{
@@ -106,13 +104,11 @@ func Signup(c *fiber.Ctx) error {
 		Password: newPwd,
 	})
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "创建用户失败", Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "创建用户失败", Payload: err.Error()})
 	}
 
 	type res struct {
-		UserID string `json:"user_id"`
+		UserID int64 `json:"user_id"`
 	}
-	return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: res{
-		UserID: strconv.Itoa(user.ID),
-	}})
+	return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: res{UserID: user.ID}})
 }
