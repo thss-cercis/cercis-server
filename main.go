@@ -62,6 +62,8 @@ func main() {
 	friend.Post("/accept", friendApi.AcceptApply)
 	friend.Post("/reject", friendApi.RejectApply)
 	friend.Get("/", friendApi.GetFriends)
+	friend.Put("/", friendApi.ModifyAlias)
+	friend.Delete("/", friendApi.DeleteFriend)
 
 	// mobile
 	v1.Post("/mobile/signup", mobileApi.SendSMSTemplate(

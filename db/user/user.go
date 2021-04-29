@@ -22,6 +22,10 @@ type User struct {
 	Avatar   string `gorm:"type:varChar(255) not null" json:"avatar"`
 	Bio      string `gorm:"type:text not null" json:"bio"`
 	Password string `gorm:"type:text not null" json:"-"`
+
+	AllowSearchByName  bool `gorm:"type:boolean not null;default:false" json:"allow_search_by_name"`
+	AllowShowPhone     bool `gorm:"type:boolean not null;default:false" json:"allow_show_phone"`
+	AllowSearchByPhone bool `gorm:"type:boolean not null;default:false" json:"allow_search_by_phone"`
 	Meta
 	// 好友列表项(自己拥有的好友)
 	FriendEntrySelf []FriendEntry `gorm:"foreignKey:SelfID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`

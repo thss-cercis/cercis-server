@@ -130,7 +130,7 @@ func GetFriends(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	entries, err := user.GetFriendEntryByUserID(db.GetDB(), userId)
+	entries, err := user.GetFriendEntrySelfByUserID(db.GetDB(), userId)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
 	}
@@ -150,4 +150,59 @@ func GetFriends(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: struct {
 		Friends []retType `json:"friends"`
 	}{Friends: ret}})
+}
+
+// ModifyAlias 修改备注名
+func ModifyAlias(c *fiber.Ctx) error {
+	req := new(struct {
+		FriendID int64  `json:"friend_id" validate:"required"`
+		Alias    string `json:"alias" validate:"required"`
+	})
+
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+	}
+
+	if err := validator.Validate(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+	}
+
+	userId, ok := middleware.GetUserIDFromSession(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
+	}
+
+	// 修改备注名
+	if _, err := user.ModifyFriendEntryAlias(db.GetDB(), userId, req.FriendID, req.Alias); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
+}
+
+// DeleteFriend 双向删除好友
+func DeleteFriend(c *fiber.Ctx) error {
+	req := new(struct {
+		FriendID int64 `json:"friend_id" validate:"required"`
+	})
+
+	if err := c.BodyParser(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+	}
+
+	if err := validator.Validate(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+	}
+
+	userId, ok := middleware.GetUserIDFromSession(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
+	}
+
+	// 修改备注名
+	if err := user.DeleteFriendEntryBi(db.GetDB(), userId, req.FriendID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
 }

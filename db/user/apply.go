@@ -54,7 +54,7 @@ func GetFriendApplyToByUserID(db *gorm.DB, userID int64) ([]FriendApply, error) 
 func CreateFriendApply(db *gorm.DB, fromID int64, toID int64) (*FriendApply, error) {
 	tx := db.Begin()
 	// 先检查是否已经为好友
-	if _, err := GetFriendEntryBi(tx, fromID, toID); err == nil {
+	if _, err := GetFriendEntry(tx, fromID, toID); err == nil {
 		tx.Rollback()
 		return nil, errors.New("已经成为好友")
 	}

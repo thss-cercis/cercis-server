@@ -24,23 +24,61 @@ func CreateFriendEntry(db *gorm.DB, selfID int64, friendID int64, alias string) 
 	return db.Create(&newEntry).Error
 }
 
-// GetFriendEntryBi 查找两个好友
-func GetFriendEntryBi(db *gorm.DB, selfID int64, friendID int64) (*FriendEntry, error) {
+// GetFriendEntry 查找两个好友
+func GetFriendEntry(db *gorm.DB, selfID int64, friendID int64) (*FriendEntry, error) {
 	entry := new(FriendEntry)
 	err := db.Where("self_id = ? AND friend_id = ?", selfID, friendID).First(entry).Error
 	return entry, err
 }
 
-// GetFriendEntryByUserID 获得用户的好友列表，因为是双向维护的，因此只需要获取一份
-func GetFriendEntryByUserID(db *gorm.DB, userID int64) ([]FriendEntry, error) {
+// GetFriendEntrySelfByUserID 获得用户自己的好友列表
+func GetFriendEntrySelfByUserID(db *gorm.DB, userID int64) ([]FriendEntry, error) {
 	var arr []FriendEntry
 	err := db.Model(&User{Model: base.Model{ID: userID}}).Association("FriendEntrySelf").Find(&arr)
 	return arr, err
 }
 
+// ModifyFriendEntryAlias 修改好友备注名
+func ModifyFriendEntryAlias(db *gorm.DB, selfID int64, friendID int64, newAlias string) (*FriendEntry, error) {
+	tx := db.Begin()
+	entry, err := GetFriendEntry(tx, selfID, friendID)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	entry.Alias = newAlias
+	if err := tx.Save(entry).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	return entry, tx.Commit().Error
+}
+
 // DeleteFriendEntryByID 删除一个单项好友项目
 func DeleteFriendEntryByID(db *gorm.DB, entryID int64) error {
 	return db.Delete(&FriendEntry{}, entryID).Error
+}
+
+// DeleteFriendEntryBi 双向删除好友
+func DeleteFriendEntryBi(db *gorm.DB, userID1 int64, userID2 int64) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		entry1, err := GetFriendEntry(db, userID1, userID2)
+		if err != nil {
+			return err
+		}
+		entry2, err := GetFriendEntry(db, userID2, userID1)
+		if err != nil {
+			return err
+		}
+		if err := db.Delete(entry1).Error; err != nil {
+			return err
+		}
+		if err := db.Delete(entry2).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // DeleteFriendEntry 删除一个单项好友项目
