@@ -27,15 +27,10 @@ func GetValidate() *v.Validate {
 }
 
 // Validate 校验 struct
-func Validate(obj interface{}) []ParamError {
+func Validate(obj interface{}) v.ValidationErrors {
 	err := GetValidate().Struct(obj)
 	if err != nil {
-		es := err.(v.ValidationErrors)
-		var ret []ParamError
-		for _, vErr := range es {
-			ret = append(ret, ParamError{Field: vErr.Field()})
-		}
-		return ret
+		return err.(v.ValidationErrors)
 	}
 	return nil
 }

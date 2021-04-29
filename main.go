@@ -7,7 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	friendApi "github.com/thss-cercis/cercis-server/api/friend"
 	mobileApi "github.com/thss-cercis/cercis-server/api/mobile"
-	"github.com/thss-cercis/cercis-server/redis"
 	"github.com/thss-cercis/cercis-server/util/sms"
 
 	"github.com/gofiber/fiber/v2"
@@ -66,14 +65,8 @@ func main() {
 	friend.Delete("/", friendApi.DeleteFriend)
 
 	// mobile
-	v1.Post("/mobile/signup", mobileApi.SendSMSTemplate(
-		redis.TagSMSSignUp, redis.ExpSMSSignUp, redis.TagSMSSignUpRetry, redis.ExpSMSSignUpRetry,
-	),
-	)
-	v1.Post("/mobile/recover", mobileApi.SendSMSTemplate(
-		redis.TagSMSRecover, redis.ExpSMSRecover, redis.TagSMSRecoverRetry, redis.ExpSMSRecoverRetry,
-	),
-	)
+	v1.Post("/mobile/signup", mobileApi.SendSMSRegister)
+	v1.Post("/mobile/recover", mobileApi.SendSMSRecover)
 
 	// chat
 	// chat := v1.Group("/chat", middleware.RedisSessionAuthenticate)

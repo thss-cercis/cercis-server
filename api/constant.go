@@ -24,6 +24,9 @@ const MsgSMSTooOften = "SMS 服务调用频率过快"
 // MsgSMSWrong SMS 验证码错误
 const MsgSMSWrong = "验证码错误"
 
+// MsgUserAlreadyExist 用户已经存在
+const MsgUserAlreadyExist = "用户已经存在"
+
 // CodeFailure 未知错误
 const CodeFailure = -1
 
@@ -46,6 +49,9 @@ const CodeUserAlreadyLogin = 102
 
 // CodeUserIDNotFound 找不到用户 id
 const CodeUserIDNotFound = 103
+
+// CodeUserAlreadyExist 用户已经存在
+const CodeUserAlreadyExist = 104
 
 // CodeSMSError SMS 服务异常
 const CodeSMSError = 200

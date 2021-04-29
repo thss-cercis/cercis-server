@@ -7,6 +7,7 @@ import (
 	userDB "github.com/thss-cercis/cercis-server/db/user"
 	"github.com/thss-cercis/cercis-server/middleware"
 	"github.com/thss-cercis/cercis-server/redis"
+	"github.com/thss-cercis/cercis-server/util"
 	"github.com/thss-cercis/cercis-server/util/security"
 	"github.com/thss-cercis/cercis-server/util/validator"
 )
@@ -17,7 +18,7 @@ func CurrentUser(c *fiber.Ctx) error {
 	if ok {
 		user, err := userDB.GetUserByID(db.GetDB(), userId)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound, Payload: err.Error()})
+			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
 		}
 		return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: user})
 	}
@@ -35,11 +36,11 @@ func ModifyUser(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -71,7 +72,7 @@ func ModifyUser(c *fiber.Ctx) error {
 
 	err = user.UpdateTo(db.GetDB())
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "更新用户信息失败"})
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError("更新用户信息失败", err)})
 	}
 
 	rep := struct {
@@ -99,11 +100,11 @@ func ModifyPassword(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -113,7 +114,7 @@ func ModifyPassword(c *fiber.Ctx) error {
 
 	user, err := userDB.GetUserByID(db.GetDB(), userId)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound})
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
 	}
 
 	if !security.CheckPasswordHash(req.OldPwd, user.Password) {
@@ -123,12 +124,12 @@ func ModifyPassword(c *fiber.Ctx) error {
 	// 修改密码
 	user.Password, err = security.HashPassword(req.NewPwd)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "修改密码失败"})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError("修改密码失败", err)})
 	}
 
 	err = user.UpdateTo(db.GetDB())
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
@@ -143,29 +144,27 @@ func RecoverPassword(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	// 检验 code
 	code, err := redis.GetKV(redis.TagSMSRecover, req.Mobile)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: api.MsgSMSWrong, Payload: err.Error()})
-	} else if code != req.Code {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: api.MsgSMSWrong})
+	if err != nil || code != req.Code {
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeSMSWrong, Msg: util.MsgWithError(api.MsgSMSWrong, err)})
 	}
 
 	newPwd, err := security.HashPassword(req.NewPwd)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: "密码 Hash 异常", Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError("密码 Hash 异常", err)})
 	}
 
 	user, err := userDB.GetUserByMobile(db.GetDB(), req.Mobile)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound})
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
 	}
 
 	// 更改密码

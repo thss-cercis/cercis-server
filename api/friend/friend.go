@@ -6,6 +6,7 @@ import (
 	"github.com/thss-cercis/cercis-server/db"
 	"github.com/thss-cercis/cercis-server/db/user"
 	"github.com/thss-cercis/cercis-server/middleware"
+	"github.com/thss-cercis/cercis-server/util"
 	"github.com/thss-cercis/cercis-server/util/validator"
 )
 
@@ -18,7 +19,7 @@ func GetSendApply(c *fiber.Ctx) error {
 
 	applies, err := user.GetFriendApplyFromByUserID(db.GetDB(), userId)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: struct {
@@ -37,7 +38,7 @@ func GetReceiveApply(c *fiber.Ctx) error {
 
 	applies, err := user.GetFriendApplyToByUserID(db.GetDB(), userId)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: struct {
@@ -55,11 +56,11 @@ func SendApply(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -73,7 +74,7 @@ func SendApply(c *fiber.Ctx) error {
 	}
 	_, err := user.CreateFriendApply(db.GetDB(), userId, req.ToID)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
@@ -87,15 +88,15 @@ func AcceptApply(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := user.AcceptFriendApply(db.GetDB(), req.ApplyID); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
@@ -109,15 +110,15 @@ func RejectApply(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := user.RejectFriendApply(db.GetDB(), req.ApplyID); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
@@ -132,7 +133,7 @@ func GetFriends(c *fiber.Ctx) error {
 
 	entries, err := user.GetFriendEntrySelfByUserID(db.GetDB(), userId)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	type retType struct {
@@ -160,11 +161,11 @@ func ModifyAlias(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -174,7 +175,7 @@ func ModifyAlias(c *fiber.Ctx) error {
 
 	// 修改备注名
 	if _, err := user.ModifyFriendEntryAlias(db.GetDB(), userId, req.FriendID, req.Alias); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
@@ -187,11 +188,11 @@ func DeleteFriend(c *fiber.Ctx) error {
 	})
 
 	if err := c.BodyParser(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	if err := validator.Validate(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam, Payload: err})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: util.MsgWithError(api.MsgWrongParam, err)})
 	}
 
 	userId, ok := middleware.GetUserIDFromSession(c)
@@ -201,7 +202,7 @@ func DeleteFriend(c *fiber.Ctx) error {
 
 	// 修改备注名
 	if err := user.DeleteFriendEntryBi(db.GetDB(), userId, req.FriendID); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: api.MsgUnknown, Payload: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
