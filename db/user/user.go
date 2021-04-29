@@ -61,9 +61,18 @@ func GetUserByMobile(db *gorm.DB, mobile string) (*User, error) {
 	return u, err
 }
 
+// GetUserLikeNickName 根据模糊搜索寻找用户
 func GetUserLikeNickName(db *gorm.DB, nickName string) ([]User, error) {
 	var us []User
-	err := db.Where("nick_name LIKE ?", fmt.Sprintf("%%%s%%", nickName)).Find(us).Error
+	err := db.Where("nick_name LIKE ?", fmt.Sprintf("%%%s%%", nickName)).Find(&us).Error
+	return us, err
+}
+
+// GetUserLikeNickNameWithOffsetAndLimit 根据模糊搜索寻找用户，带分页
+func GetUserLikeNickNameWithOffsetAndLimit(db *gorm.DB, nickName string, offset int64, limit int64) ([]User, error) {
+	var us []User
+	err := db.Where("nick_name LIKE ?", fmt.Sprintf("%%%s%%", nickName)).
+		Offset(int(offset)).Limit(int(limit)).Find(&us).Error
 	return us, err
 }
 

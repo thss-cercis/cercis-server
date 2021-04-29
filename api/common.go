@@ -30,7 +30,7 @@ func ParamParserWrap(c *fiber.Ctx, req interface{}) (ok bool, err error) {
 func ValidateWrap(c *fiber.Ctx, req interface{}) (ok bool, err error) {
 	if e := validator.Validate(req); e != nil {
 		ok = false
-		err = c.Status(fiber.StatusBadRequest).JSON(BaseRes{Code: CodeBadParam, Msg: util.MsgWithError(MsgWrongParam, err)})
+		err = c.Status(fiber.StatusBadRequest).JSON(BaseRes{Code: CodeBadParam, Msg: util.MsgWithError(MsgWrongParam, e)})
 		return
 	}
 	ok = true

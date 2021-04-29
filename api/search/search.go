@@ -5,14 +5,15 @@ import (
 	"github.com/thss-cercis/cercis-server/api"
 	"github.com/thss-cercis/cercis-server/db"
 	"github.com/thss-cercis/cercis-server/db/user"
-	"strconv"
 )
 
 func SearchUser(c *fiber.Ctx) error {
 	req := new(struct {
-		ID       string `json:"id" form:"id" xml:"id" validate:"required_without=Mobile NickName"`
-		Mobile   string `json:"mobile" form:"mobile" xml:"mobile" validate:"omitempty,phone_number"`
-		NickName string `json:"nickname" form:"nickname" xml:"nickname"`
+		ID       int64  `json:"id" form:"id" validate:"required_without_all=Mobile NickName"`
+		Mobile   string `json:"mobile" form:"mobile" validate:"omitempty,phone_number"`
+		NickName string `json:"nickname" form:"nickname"`
+		Offset   int64  `json:"offset" xml:"offset"`
+		Limit    int64  `json:"limit" xml:"limit"`
 	})
 
 	if ok, err := api.ParamParserWrap(c, req); !ok {
@@ -44,9 +45,9 @@ func SearchUser(c *fiber.Ctx) error {
 	}
 
 	users := make([]resType, 0)
-	reqID, _ := strconv.Atoi(req.ID)
-	if reqID != 0 {
-		u, err := user.GetUserByID(db.GetDB(), int64(reqID))
+	//reqID, _ := strconv.Atoi(req.ID)
+	if req.ID != 0 {
+		u, err := user.GetUserByID(db.GetDB(), req.ID)
 		if err == nil && u != nil {
 			users = append(users, userToResType(u))
 		}
@@ -56,7 +57,7 @@ func SearchUser(c *fiber.Ctx) error {
 			users = append(users, userToResType(u))
 		}
 	} else if req.NickName != "" {
-		us, err := user.GetUserLikeNickName(db.GetDB(), req.NickName)
+		us, err := user.GetUserLikeNickNameWithOffsetAndLimit(db.GetDB(), req.NickName, req.Offset, req.Limit)
 		if err == nil {
 			for _, u := range us {
 				if u.AllowSearchByName {
