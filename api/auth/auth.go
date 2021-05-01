@@ -63,7 +63,10 @@ func Login(c *fiber.Ctx) error {
 
 // Logout 用户登出，销毁当前 session
 func Logout(c *fiber.Ctx) error {
-	sess := middleware.GetSession(c)
+	sess, err := middleware.GetSession(c)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
+	}
 
 	// Destry session
 	if err := sess.Destroy(); err != nil {
