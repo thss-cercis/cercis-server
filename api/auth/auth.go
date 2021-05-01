@@ -58,7 +58,11 @@ func Login(c *fiber.Ctx) error {
 		panic(err)
 	}
 
-	return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
+	return c.JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: struct {
+		ID int64 `json:"id"`
+	}{
+		ID: u.ID,
+	}})
 }
 
 // Logout 用户登出，销毁当前 session
