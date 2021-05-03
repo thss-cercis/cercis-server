@@ -80,10 +80,10 @@ func CreateFriendApply(db *gorm.DB, fromID int64, toID int64) (*FriendApply, err
 }
 
 // AcceptFriendApply 接受一个待确定的好友申请
-func AcceptFriendApply(db *gorm.DB, applyID int64) error {
+func AcceptFriendApply(db *gorm.DB, applyID int64, userID int64) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		entry, err := GetFriendApplyByID(tx, applyID)
-		if err != nil || entry.State != StateUncertain {
+		if err != nil || entry.State != StateUncertain || entry.ToID != userID {
 			return errors.Errorf("Error: %v, %v", err, "获取待确定的好友申请失败")
 		}
 		// 设置 apply state
@@ -109,10 +109,10 @@ func AcceptFriendApply(db *gorm.DB, applyID int64) error {
 }
 
 // RejectFriendApply 拒绝一个待确定的好友申请
-func RejectFriendApply(db *gorm.DB, applyID int64) error {
+func RejectFriendApply(db *gorm.DB, applyID int64, userID int64) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		entry, err := GetFriendApplyByID(tx, applyID)
-		if err != nil || entry.State != StateUncertain {
+		if err != nil || entry.State != StateUncertain || entry.ToID != userID {
 			return errors.Errorf("Error: %v, %v", err, "获取待确定的好友申请失败")
 		}
 		// 设置 apply state

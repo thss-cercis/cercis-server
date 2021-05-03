@@ -49,7 +49,7 @@ func GetSession(c *fiber.Ctx) (*session.Session, error) {
 	return sess, err
 }
 
-// GetUserIDFromSession 从 ctx 中的 session 中获取当前 userId
+// GetUserIDFromSession 从 ctx 中的 session 中获取当前 userID
 func GetUserIDFromSession(c *fiber.Ctx) (userID int64, ok bool) {
 	sess, err := GetSession(c)
 	if err != nil {

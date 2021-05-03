@@ -72,7 +72,7 @@ func Logout(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	// Destry session
+	// Destroy session
 	if err := sess.Destroy(); err != nil {
 		panic(err)
 	}

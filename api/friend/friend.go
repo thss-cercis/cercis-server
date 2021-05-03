@@ -11,39 +11,71 @@ import (
 
 // GetSendApply 获得自己发送的好友申请
 func GetSendApply(c *fiber.Ctx) error {
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	applies, err := user.GetFriendApplyFromByUserID(db.GetDB(), userId)
+	applies, err := user.GetFriendApplyFromByUserID(db.GetDB(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
+	type resType struct {
+		ApplyID int64                 `json:"apply_id"`
+		FromID  int64                 `json:"from_id"`
+		ToID    int64                 `json:"to_id"`
+		State   user.FriendApplyState `json:"state"`
+	}
+	var res = make([]resType, 0)
+	for _, apply := range applies {
+		res = append(res, resType{
+			ApplyID: apply.ID,
+			FromID:  apply.FromID,
+			ToID:    apply.ToID,
+			State:   apply.State,
+		})
+	}
+
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: struct {
-		Applies []user.FriendApply `json:"applies"`
+		Applies []resType `json:"applies"`
 	}{
-		Applies: applies,
+		Applies: res,
 	}})
 }
 
 // GetReceiveApply 获得自己收到的好友申请
 func GetReceiveApply(c *fiber.Ctx) error {
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	applies, err := user.GetFriendApplyToByUserID(db.GetDB(), userId)
+	applies, err := user.GetFriendApplyToByUserID(db.GetDB(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
+	type resType struct {
+		ApplyID int64                 `json:"apply_id"`
+		FromID  int64                 `json:"from_id"`
+		ToID    int64                 `json:"to_id"`
+		State   user.FriendApplyState `json:"state"`
+	}
+	var res = make([]resType, 0)
+	for _, apply := range applies {
+		res = append(res, resType{
+			ApplyID: apply.ID,
+			FromID:  apply.FromID,
+			ToID:    apply.ToID,
+			State:   apply.State,
+		})
+	}
+
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: struct {
-		Applies []user.FriendApply `json:"applies"`
+		Applies []resType `json:"applies"`
 	}{
-		Applies: applies,
+		Applies: res,
 	}})
 }
 
@@ -62,16 +94,16 @@ func SendApply(c *fiber.Ctx) error {
 		return err
 	}
 
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
 	// 自己不能发给自己
-	if userId == req.ToID {
+	if userID == req.ToID {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "不允许向自身发送好友请求"})
 	}
-	_, err := user.CreateFriendApply(db.GetDB(), userId, req.ToID)
+	_, err := user.CreateFriendApply(db.GetDB(), userID, req.ToID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
@@ -94,7 +126,12 @@ func AcceptApply(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := user.AcceptFriendApply(db.GetDB(), req.ApplyID); err != nil {
+	userID, ok := middleware.GetUserIDFromSession(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
+	}
+
+	if err := user.AcceptFriendApply(db.GetDB(), req.ApplyID, userID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
@@ -116,7 +153,12 @@ func RejectApply(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := user.RejectFriendApply(db.GetDB(), req.ApplyID); err != nil {
+	userID, ok := middleware.GetUserIDFromSession(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
+	}
+
+	if err := user.RejectFriendApply(db.GetDB(), req.ApplyID, userID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
@@ -125,12 +167,12 @@ func RejectApply(c *fiber.Ctx) error {
 
 // GetFriends 获得所有好友
 func GetFriends(c *fiber.Ctx) error {
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	entries, err := user.GetFriendEntrySelfByUserID(db.GetDB(), userId)
+	entries, err := user.GetFriendEntrySelfByUserID(db.GetDB(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
@@ -167,13 +209,13 @@ func ModifyAlias(c *fiber.Ctx) error {
 		return err
 	}
 
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
 	// 修改备注名
-	if _, err := user.ModifyFriendEntryAlias(db.GetDB(), userId, req.FriendID, req.Alias); err != nil {
+	if _, err := user.ModifyFriendEntryAlias(db.GetDB(), userID, req.FriendID, req.Alias); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 
@@ -194,13 +236,13 @@ func DeleteFriend(c *fiber.Ctx) error {
 		return err
 	}
 
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
 	// 修改备注名
-	if err := user.DeleteFriendEntryBi(db.GetDB(), userId, req.FriendID); err != nil {
+	if err := user.DeleteFriendEntryBi(db.GetDB(), userID, req.FriendID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 

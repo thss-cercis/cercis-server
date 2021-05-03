@@ -13,9 +13,9 @@ import (
 
 // CurrentUser 查询当前用户信息的 api
 func CurrentUser(c *fiber.Ctx) error {
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if ok {
-		user, err := userDB.GetUserByID(db.GetDB(), userId)
+		user, err := userDB.GetUserByID(db.GetDB(), userID)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
 		}
@@ -42,12 +42,12 @@ func ModifyUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	user, err := userDB.GetUserByID(db.GetDB(), userId)
+	user, err := userDB.GetUserByID(db.GetDB(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound})
 	}
@@ -153,12 +153,12 @@ func ModifyPassword(c *fiber.Ctx) error {
 		return err
 	}
 
-	userId, ok := middleware.GetUserIDFromSession(c)
+	userID, ok := middleware.GetUserIDFromSession(c)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	user, err := userDB.GetUserByID(db.GetDB(), userId)
+	user, err := userDB.GetUserByID(db.GetDB(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
 	}
