@@ -7,6 +7,7 @@ import (
 	"github.com/thss-cercis/cercis-server/db/user"
 	"github.com/thss-cercis/cercis-server/middleware"
 	"github.com/thss-cercis/cercis-server/util"
+	"time"
 )
 
 // GetSendApply 获得自己发送的好友申请
@@ -22,18 +23,22 @@ func GetSendApply(c *fiber.Ctx) error {
 	}
 
 	type resType struct {
-		ApplyID int64                 `json:"apply_id"`
-		FromID  int64                 `json:"from_id"`
-		ToID    int64                 `json:"to_id"`
-		State   user.FriendApplyState `json:"state"`
+		ApplyID   int64                 `json:"apply_id"`
+		FromID    int64                 `json:"from_id"`
+		ToID      int64                 `json:"to_id"`
+		Alias     string                `json:"alias"`
+		State     user.FriendApplyState `json:"state"`
+		CreatedAt time.Time             `json:"created_at"`
 	}
 	var res = make([]resType, 0)
 	for _, apply := range applies {
 		res = append(res, resType{
-			ApplyID: apply.ID,
-			FromID:  apply.FromID,
-			ToID:    apply.ToID,
-			State:   apply.State,
+			ApplyID:   apply.ID,
+			FromID:    apply.FromID,
+			ToID:      apply.ToID,
+			Alias:     apply.Alias,
+			State:     apply.State,
+			CreatedAt: apply.CreatedAt,
 		})
 	}
 
@@ -57,18 +62,20 @@ func GetReceiveApply(c *fiber.Ctx) error {
 	}
 
 	type resType struct {
-		ApplyID int64                 `json:"apply_id"`
-		FromID  int64                 `json:"from_id"`
-		ToID    int64                 `json:"to_id"`
-		State   user.FriendApplyState `json:"state"`
+		ApplyID   int64                 `json:"apply_id"`
+		FromID    int64                 `json:"from_id"`
+		ToID      int64                 `json:"to_id"`
+		State     user.FriendApplyState `json:"state"`
+		CreatedAt time.Time             `json:"created_at"`
 	}
 	var res = make([]resType, 0)
 	for _, apply := range applies {
 		res = append(res, resType{
-			ApplyID: apply.ID,
-			FromID:  apply.FromID,
-			ToID:    apply.ToID,
-			State:   apply.State,
+			ApplyID:   apply.ID,
+			FromID:    apply.FromID,
+			ToID:      apply.ToID,
+			State:     apply.State,
+			CreatedAt: apply.CreatedAt,
 		})
 	}
 
@@ -84,6 +91,8 @@ func SendApply(c *fiber.Ctx) error {
 	// TODO websocket
 	req := new(struct {
 		ToID int64 `json:"to_id" validate:"required"`
+		// 申请者给接受者的预设备注
+		Alias string `json:"alias" validate:"max=127"`
 	})
 
 	if ok, err := api.ParamParserWrap(c, req); !ok {
@@ -103,7 +112,7 @@ func SendApply(c *fiber.Ctx) error {
 	if userID == req.ToID {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "不允许向自身发送好友请求"})
 	}
-	_, err := user.CreateFriendApply(db.GetDB(), userID, req.ToID)
+	_, err := user.CreateFriendApply(db.GetDB(), userID, req.ToID, req.Alias)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
@@ -116,6 +125,8 @@ func AcceptApply(c *fiber.Ctx) error {
 	// TODO websocket
 	req := new(struct {
 		ApplyID int64 `json:"apply_id" validate:"required"`
+		// 接收者给申请者的备注
+		Alias string `json:"alias" validate:"max=127"`
 	})
 
 	if ok, err := api.ParamParserWrap(c, req); !ok {
@@ -131,7 +142,7 @@ func AcceptApply(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	if err := user.AcceptFriendApply(db.GetDB(), req.ApplyID, userID); err != nil {
+	if err := user.AcceptFriendApply(db.GetDB(), req.ApplyID, userID, req.Alias); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
 

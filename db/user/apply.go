@@ -17,9 +17,11 @@ const (
 // FriendApply 好友申请项的 dao
 type FriendApply struct {
 	base.Model
-	FromID int64            `gorm:"index:idx_from;" json:"from_id"`
-	ToID   int64            `gorm:"index:idx_to;" json:"to_id"`
-	State  FriendApplyState `gorm:"type:smallint;check:state >= -1 and state <= 1" json:"state"`
+	FromID int64 `gorm:"index:idx_from;" json:"from_id"`
+	ToID   int64 `gorm:"index:idx_to;" json:"to_id"`
+	// Alias 表示申请人给接受者预设的备注
+	Alias string           `gorm:"type:varChar(127) not null" json:"alias"`
+	State FriendApplyState `gorm:"type:smallint;check:state >= -1 and state <= 1" json:"state"`
 }
 
 // GetFriendApplyByID 根据 id 获取好友申请
@@ -51,7 +53,8 @@ func GetFriendApplyToByUserID(db *gorm.DB, userID int64) ([]FriendApply, error) 
 }
 
 // CreateFriendApply 创建一个新的待确定的好友申请
-func CreateFriendApply(db *gorm.DB, fromID int64, toID int64) (*FriendApply, error) {
+// alias 表示发送者给接受者的预设备注
+func CreateFriendApply(db *gorm.DB, fromID int64, toID int64, alias string) (*FriendApply, error) {
 	tx := db.Begin()
 	// 先检查是否已经为好友
 	if _, err := GetFriendEntry(tx, fromID, toID); err == nil {
@@ -67,6 +70,7 @@ func CreateFriendApply(db *gorm.DB, fromID int64, toID int64) (*FriendApply, err
 	entry := &FriendApply{
 		FromID: fromID,
 		ToID:   toID,
+		Alias:  alias,
 		State:  StateUncertain,
 	}
 	if err := tx.Create(entry).Error; err != nil {
@@ -79,8 +83,8 @@ func CreateFriendApply(db *gorm.DB, fromID int64, toID int64) (*FriendApply, err
 	return entry, nil
 }
 
-// AcceptFriendApply 接受一个待确定的好友申请
-func AcceptFriendApply(db *gorm.DB, applyID int64, userID int64) error {
+// AcceptFriendApply 接受一个待确定的好友申请, alias 表示接受者给申请人的备注
+func AcceptFriendApply(db *gorm.DB, applyID int64, userID int64, alias string) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		entry, err := GetFriendApplyByID(tx, applyID)
 		if err != nil || entry.State != StateUncertain || entry.ToID != userID {
@@ -95,12 +99,14 @@ func AcceptFriendApply(db *gorm.DB, applyID int64, userID int64) error {
 		if err := tx.Create(&FriendEntry{
 			SelfID:   entry.FromID,
 			FriendID: entry.ToID,
+			Alias:    entry.Alias,
 		}).Error; err != nil {
 			return errors.Wrap(err, "创建新好友项失败")
 		}
 		if err := tx.Create(&FriendEntry{
 			SelfID:   entry.ToID,
 			FriendID: entry.FromID,
+			Alias:    alias,
 		}).Error; err != nil {
 			return errors.Wrap(err, "创建新好友项失败")
 		}
