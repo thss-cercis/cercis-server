@@ -20,8 +20,10 @@ type FriendApply struct {
 	FromID int64 `gorm:"index:idx_from;" json:"from_id"`
 	ToID   int64 `gorm:"index:idx_to;" json:"to_id"`
 	// Alias 表示申请人给接受者预设的备注
-	Alias string           `gorm:"type:varChar(127) not null" json:"alias"`
-	State FriendApplyState `gorm:"type:smallint;check:state >= -1 and state <= 1" json:"state"`
+	Alias string `gorm:"type:varChar(127)" json:"alias"`
+	// Remark
+	Remark string           `gorm:"type:varChar(255)" json:"remark"`
+	State  FriendApplyState `gorm:"type:smallint;check:state >= -1 and state <= 1" json:"state"`
 }
 
 // GetFriendApplyByID 根据 id 获取好友申请
@@ -54,7 +56,7 @@ func GetFriendApplyToByUserID(db *gorm.DB, userID int64) ([]FriendApply, error) 
 
 // CreateFriendApply 创建一个新的待确定的好友申请
 // alias 表示发送者给接受者的预设备注
-func CreateFriendApply(db *gorm.DB, fromID int64, toID int64, alias string) (*FriendApply, error) {
+func CreateFriendApply(db *gorm.DB, fromID int64, toID int64, alias string, remark string) (*FriendApply, error) {
 	tx := db.Begin()
 	// 先检查是否已经为好友
 	if _, err := GetFriendEntry(tx, fromID, toID); err == nil {
@@ -71,6 +73,7 @@ func CreateFriendApply(db *gorm.DB, fromID int64, toID int64, alias string) (*Fr
 		FromID: fromID,
 		ToID:   toID,
 		Alias:  alias,
+		Remark: remark,
 		State:  StateUncertain,
 	}
 	if err := tx.Create(entry).Error; err != nil {

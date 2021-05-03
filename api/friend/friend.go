@@ -7,7 +7,6 @@ import (
 	"github.com/thss-cercis/cercis-server/db/user"
 	"github.com/thss-cercis/cercis-server/middleware"
 	"github.com/thss-cercis/cercis-server/util"
-	"time"
 )
 
 // GetSendApply 获得自己发送的好友申请
@@ -27,8 +26,9 @@ func GetSendApply(c *fiber.Ctx) error {
 		FromID    int64                 `json:"from_id"`
 		ToID      int64                 `json:"to_id"`
 		Alias     string                `json:"alias"`
+		Remark    string                `json:"remark"`
 		State     user.FriendApplyState `json:"state"`
-		CreatedAt time.Time             `json:"created_at"`
+		CreatedAt int64                 `json:"created_at"`
 	}
 	var res = make([]resType, 0)
 	for _, apply := range applies {
@@ -37,8 +37,9 @@ func GetSendApply(c *fiber.Ctx) error {
 			FromID:    apply.FromID,
 			ToID:      apply.ToID,
 			Alias:     apply.Alias,
+			Remark:    apply.Remark,
 			State:     apply.State,
-			CreatedAt: apply.CreatedAt,
+			CreatedAt: apply.CreatedAt.UnixNano(),
 		})
 	}
 
@@ -65,8 +66,9 @@ func GetReceiveApply(c *fiber.Ctx) error {
 		ApplyID   int64                 `json:"apply_id"`
 		FromID    int64                 `json:"from_id"`
 		ToID      int64                 `json:"to_id"`
+		Remark    string                `json:"remark"`
 		State     user.FriendApplyState `json:"state"`
-		CreatedAt time.Time             `json:"created_at"`
+		CreatedAt int64                 `json:"created_at"`
 	}
 	var res = make([]resType, 0)
 	for _, apply := range applies {
@@ -74,8 +76,9 @@ func GetReceiveApply(c *fiber.Ctx) error {
 			ApplyID:   apply.ID,
 			FromID:    apply.FromID,
 			ToID:      apply.ToID,
+			Remark:    apply.Remark,
 			State:     apply.State,
-			CreatedAt: apply.CreatedAt,
+			CreatedAt: apply.CreatedAt.UnixNano(),
 		})
 	}
 
@@ -93,6 +96,8 @@ func SendApply(c *fiber.Ctx) error {
 		ToID int64 `json:"to_id" validate:"required"`
 		// 申请者给接受者的预设备注
 		Alias string `json:"alias" validate:"max=127"`
+		// 验证消息
+		Remark string `json:"remark" validate:"max=255"`
 	})
 
 	if ok, err := api.ParamParserWrap(c, req); !ok {
@@ -112,7 +117,7 @@ func SendApply(c *fiber.Ctx) error {
 	if userID == req.ToID {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: "不允许向自身发送好友请求"})
 	}
-	_, err := user.CreateFriendApply(db.GetDB(), userID, req.ToID, req.Alias)
+	_, err := user.CreateFriendApply(db.GetDB(), userID, req.ToID, req.Alias, req.Remark)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUnknown, err)})
 	}
