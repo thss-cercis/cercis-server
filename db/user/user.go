@@ -5,8 +5,9 @@ package user
 
 import (
 	"fmt"
-	"github.com/thss-cercis/cercis-server/db/base"
 	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
+	"time"
 )
 
 // Meta 额外的用户信息
@@ -16,7 +17,8 @@ type Meta struct {
 
 // User 用户的 dao
 type User struct {
-	base.Model
+	ID int64 `gorm:"primarykey" json:"id"`
+
 	NickName string `gorm:"type:varChar(255) not null" json:"nickname"`
 	Email    string `gorm:"type:varChar(255) not null" json:"email"`
 	Mobile   string `gorm:"type:varChar(31) not null;uniqueIndex:idx_mobile" json:"mobile"`
@@ -36,6 +38,10 @@ type User struct {
 	FriendApplyFrom []FriendApply `gorm:"foreignKey:FromID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	// 好友申请项(自己接收)
 	FriendApplyTo []FriendApply `gorm:"foreignKey:ToID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+
+	CreatedAt time.Time             `json:"created_at"`
+	UpdatedAt time.Time             `json:"updated_at"`
+	DeletedAt soft_delete.DeletedAt `gorm:"uniqueIndex:idx_mobile" json:"deleted_at"`
 }
 
 // CreateUser 创建一个新用户
@@ -86,7 +92,7 @@ func GetUserCount(db *gorm.DB) (int64, error) {
 // DeleteUser 软删除一个用户，带 cascade
 func DeleteUser(db *gorm.DB, userID int64) error {
 	return db.Select("FriendEntrySelf", "FriendEntryFriend", "FriendApplyFrom", "FriendApplyTo").
-		Delete(&User{Model: base.Model{ID: userID}}).Error
+		Delete(&User{ID: userID}).Error
 }
 
 // UpdateFrom 根据主键，从数据库中获取数据

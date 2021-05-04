@@ -4,16 +4,21 @@ package user
 // 好友列表项的数据库定义
 
 import (
-	"github.com/thss-cercis/cercis-server/db/base"
 	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
+	"time"
 )
 
 // FriendEntry 好友列表项的 dao
 type FriendEntry struct {
-	base.Model
+	ID       int64  `gorm:"primarykey" json:"id"`
 	SelfID   int64  `gorm:"uniqueIndex:idx_composited_id;index:idx_self" json:"self_id"`
 	FriendID int64  `gorm:"uniqueIndex:idx_composited_id;index:idx_friend" json:"friend_id"`
 	Alias    string `gorm:"type:varChar(127) not null" json:"alias"`
+
+	CreatedAt time.Time             `json:"created_at"`
+	UpdatedAt time.Time             `json:"updated_at"`
+	DeletedAt soft_delete.DeletedAt `gorm:"uniqueIndex:idx_composited_id" json:"deleted_at"`
 }
 
 // CreateFriendEntry 创建一个单向好友列表项目
@@ -34,7 +39,7 @@ func GetFriendEntry(db *gorm.DB, selfID int64, friendID int64) (*FriendEntry, er
 // GetFriendEntrySelfByUserID 获得用户自己的好友列表
 func GetFriendEntrySelfByUserID(db *gorm.DB, userID int64) ([]FriendEntry, error) {
 	var arr []FriendEntry
-	err := db.Model(&User{Model: base.Model{ID: userID}}).Association("FriendEntrySelf").Find(&arr)
+	err := db.Model(&User{ID: userID}).Association("FriendEntrySelf").Find(&arr)
 	return arr, err
 }
 

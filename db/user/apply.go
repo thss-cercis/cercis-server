@@ -2,8 +2,9 @@ package user
 
 import (
 	"github.com/pkg/errors"
-	"github.com/thss-cercis/cercis-server/db/base"
 	"gorm.io/gorm"
+	"gorm.io/plugin/soft_delete"
+	"time"
 )
 
 type FriendApplyState int64
@@ -16,7 +17,7 @@ const (
 
 // FriendApply 好友申请项的 dao
 type FriendApply struct {
-	base.Model
+	ID     int64 `gorm:"primarykey" json:"id"`
 	FromID int64 `gorm:"index:idx_from;" json:"from_id"`
 	ToID   int64 `gorm:"index:idx_to;" json:"to_id"`
 	// Alias 表示申请人给接受者预设的备注
@@ -24,6 +25,10 @@ type FriendApply struct {
 	// Remark
 	Remark string           `gorm:"type:varChar(255)" json:"remark"`
 	State  FriendApplyState `gorm:"type:smallint;check:state >= -1 and state <= 1" json:"state"`
+
+	CreatedAt time.Time             `json:"created_at"`
+	UpdatedAt time.Time             `json:"updated_at"`
+	DeletedAt soft_delete.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
 // GetFriendApplyByID 根据 id 获取好友申请
@@ -43,14 +48,14 @@ func GetUncertainFriendApply(db *gorm.DB, fromID int64, toID int64) (*FriendAppl
 // GetFriendApplyFromByUserID 获得用户自己发送的好友申请列表
 func GetFriendApplyFromByUserID(db *gorm.DB, userID int64) ([]FriendApply, error) {
 	var arr []FriendApply
-	err := db.Model(&User{Model: base.Model{ID: userID}}).Association("FriendApplyFrom").Find(&arr)
+	err := db.Model(&User{ID: userID}).Association("FriendApplyFrom").Find(&arr)
 	return arr, err
 }
 
 // GetFriendApplyToByUserID 获得用户收到的好友申请列表
 func GetFriendApplyToByUserID(db *gorm.DB, userID int64) ([]FriendApply, error) {
 	var arr []FriendApply
-	err := db.Model(&User{Model: base.Model{ID: userID}}).Association("FriendApplyTo").Find(&arr)
+	err := db.Model(&User{ID: userID}).Association("FriendApplyTo").Find(&arr)
 	return arr, err
 }
 
