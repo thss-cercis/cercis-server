@@ -103,6 +103,12 @@ func AcceptFriendApply(db *gorm.DB, applyID int64, userID int64, alias string) e
 		if err := tx.Save(entry).Error; err != nil {
 			return errors.Wrap(err, "更新好友申请状态失败")
 		}
+		// 删除对方给自己的待定好友申请
+		entryOpposite, err := GetUncertainFriendApply(db, entry.ToID, entry.FromID)
+		if err == nil && entryOpposite != nil {
+			entryOpposite.State = StateAccept
+			db.Save(entryOpposite)
+		}
 		// 插入双向好友项
 		if err := tx.Create(&FriendEntry{
 			SelfID:   entry.FromID,
