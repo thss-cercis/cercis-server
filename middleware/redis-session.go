@@ -4,8 +4,8 @@ package middleware
 // 目前在 session.Session 中存入一个名为 `user_id` 的键值对
 
 import (
-	"log"
-	"os"
+	"github.com/sirupsen/logrus"
+	logger2 "github.com/thss-cercis/cercis-server/logger"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,8 +16,10 @@ import (
 	"github.com/thss-cercis/cercis-server/config"
 )
 
-//var loggerOut = log.New(os.Stdout, "[redis-session] ", log.LstdFlags|log.Lshortfile)
-var loggerErr = log.New(os.Stderr, "[redis-session] Error: ", log.LstdFlags|log.Lshortfile)
+var logFieldsRedis = logrus.Fields{
+	"middleware": true,
+	"module":     "redis-session",
+}
 
 var store *session.Store
 
@@ -59,22 +61,38 @@ func GetUserIDFromSession(c *fiber.Ctx) (userID int64, ok bool) {
 	return
 }
 
+func GetSessionIDFromSession(c *fiber.Ctx) (sessionID string, ok bool) {
+	_, err := GetSession(c)
+	if err != nil {
+		return "", false
+	}
+	sessionID = c.Cookies("session_id")
+	if sessionID == "" {
+		ok = false
+	} else {
+		ok = true
+	}
+	return
+}
+
 // RedisSessionAuthenticate 使用 redis 的验证用户身份的中间件
 func RedisSessionAuthenticate(c *fiber.Ctx) error {
+	logger := logger2.GetLogger()
 	sess, err := GetSession(c)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 	// get user id
 	rawUserID := sess.Get("user_id")
-	_, ok := rawUserID.(int64)
+	userID, ok := rawUserID.(int64)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
-	//sess.Set("user_id", userID)
 	if err := sess.Save(); err != nil {
 		panic(err)
 	}
+
+	logger.WithFields(logFieldsRedis).Infof("User_id %v with session %v", userID, c.Cookies("session_id"))
 	return c.Next()
 }
 

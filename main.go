@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/sirupsen/logrus"
 	friendApi "github.com/thss-cercis/cercis-server/api/friend"
 	mobileApi "github.com/thss-cercis/cercis-server/api/mobile"
 	searchApi "github.com/thss-cercis/cercis-server/api/search"
+	logger2 "github.com/thss-cercis/cercis-server/logger"
 	"github.com/thss-cercis/cercis-server/util/sms"
 
 	"github.com/gofiber/fiber/v2"
@@ -30,6 +32,7 @@ func main() {
 	config.Init(*configPath)
 	cf := config.GetConfig()
 	sms.Init(cf.SMS.Region, cf.SMS.AccessKey, cf.SMS.Secret, cf.SMS.SignName, cf.SMS.TemplateCode)
+	logger2.Init(logrus.Level(cf.Server.Logger.Level))
 
 	// 自动迁移数据库
 	db.AutoMigrate()
@@ -47,6 +50,9 @@ func main() {
 	v1.Post("/auth/logout", middleware.RedisSessionAuthenticate, auth.Logout)
 	v1.Post("/auth/signup", auth.Signup)
 	v1.Post("/auth/recover", userApi.RecoverPassword)
+
+	// ! websocket
+	v1.Use("/ws", middleware.WebsocketGetSession, middleware.WebsocketConnect())
 
 	// user
 	user := v1.Group("/user", middleware.RedisSessionAuthenticate)
