@@ -2,7 +2,7 @@ server:
   host: "0.0.0.0"
   port: 9191
   logger:
-    level: 5  # 0-Panic, 1-Fatal, 2-Error, 3-Warn, 4-Info, 5-Debug, 6-Trace
+    level: 4  # 0-Panic, 1-Fatal, 2-Error, 3-Warn, 4-Info, 5-Debug, 6-Trace
 redis:
   host: "127.0.0.1"
   port: 6379

@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1051
 	github.com/andybalholm/brotli v1.0.2 // indirect
+	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/fasthttp/websocket v1.4.3 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-redis/redis/v8 v8.8.2

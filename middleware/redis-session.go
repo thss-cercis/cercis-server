@@ -17,8 +17,8 @@ import (
 )
 
 var logFieldsRedis = logrus.Fields{
-	"middleware": true,
 	"module":     "redis-session",
+	"middleware": true,
 }
 
 var store *session.Store
@@ -88,6 +88,7 @@ func RedisSessionAuthenticate(c *fiber.Ctx) error {
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
+
 	if err := sess.Save(); err != nil {
 		panic(err)
 	}

@@ -59,3 +59,13 @@ const CodeSMSTooOften = 201
 
 // CodeSMSWrong SMS 验证码错误
 const CodeSMSWrong = 202
+
+/*
+ * WebSocket Type code
+ */
+
+// TypeNewFriendApply 新好友请求
+const TypeNewFriendApply = 100
+
+// TypeFriendListUpdate 好友列表更新
+const TypeFriendListUpdate = 101

@@ -10,8 +10,8 @@ import (
 )
 
 var logFieldsWS = logrus.Fields{
-	"middleware": true,
 	"module":     "websocket",
+	"middleware": true,
 }
 
 func WebsocketGetSession(c *fiber.Ctx) error {
@@ -20,11 +20,13 @@ func WebsocketGetSession(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeBadParam, Msg: api.MsgWrongParam})
 	}
 	c.Cookie(&fiber.Cookie{Name: "session_id", Value: sessionID})
-	if _, err := GetSession(c); err != nil {
+	userID, ok := GetUserIDFromSession(c)
+	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 	if websocket.IsWebSocketUpgrade(c) {
 		c.Locals("session_id", sessionID)
+		c.Locals("user_id", userID)
 		return c.Next()
 	}
 	return fiber.ErrUpgradeRequired
@@ -34,8 +36,10 @@ func WebsocketConnect() fiber.Handler {
 	return websocket.New(func(conn *websocket.Conn) {
 		logger := logger2.GetLogger()
 		sessionID := conn.Locals("session_id").(string)
+		userID := conn.Locals("user_id").(int64)
+		logger.WithFields(logFieldsWS).Infof("Create new ws conn of user %v for session %v", userID, sessionID)
 		// 存入当前的 websocket 连接
-		ws.PutConn(sessionID, conn.Conn)
-		logger.WithFields(logFieldsWS).Infof("Create new ws conn for session %v", sessionID)
+		c := ws.PutConn(sessionID, userID, conn.Conn)
+		c.Start()
 	})
 }
