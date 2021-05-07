@@ -139,7 +139,7 @@ func (wrapper *ConnWrapper) Start() {
 
 	ticker := time.NewTicker(30 * time.Second)
 LabelFor:
-	for {
+	for !wrapper.isClosed {
 		select {
 		case <-ticker.C:
 			if err := wrapper.conn.WriteControl(websocket.PingMessage, []byte("heartbeat"), time.Now().Add(5*time.Second)); err != nil {
@@ -150,6 +150,9 @@ LabelFor:
 			logger.WithFields(logFields).Tracef("Heartbeat sent to session %v", wrapper.SessionID)
 			break
 		case jsonObj := <-wrapper.ch:
+			if jsonObj == nil {
+				break LabelFor
+			}
 			if err := wrapper.conn.WriteJSON(jsonObj); err != nil {
 				_ = wrapper.Close()
 				_ = DelConn(wrapper.SessionID)
