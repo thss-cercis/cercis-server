@@ -137,6 +137,14 @@ func (wrapper *ConnWrapper) Start() {
 		}
 	}()
 
+	go func() {
+		for {
+			if _, _, err := wrapper.conn.NextReader(); err != nil {
+				break
+			}
+		}
+	}()
+
 	ticker := time.NewTicker(30 * time.Second)
 LabelFor:
 	for !wrapper.isClosed {
