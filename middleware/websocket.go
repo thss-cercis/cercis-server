@@ -7,6 +7,7 @@ import (
 	"github.com/thss-cercis/cercis-server/api"
 	logger2 "github.com/thss-cercis/cercis-server/logger"
 	"github.com/thss-cercis/cercis-server/ws"
+	"time"
 )
 
 var logFieldsWS = logrus.Fields{
@@ -39,6 +40,9 @@ func WebsocketConnect() fiber.Handler {
 		userID := conn.Locals("user_id").(int64)
 		logger.WithFields(logFieldsWS).Infof("Create new ws conn of user %v for session %v", userID, sessionID)
 		// 存入当前的 websocket 连接
+		conn.SetPingHandler(func(appData string) error {
+			return conn.WriteControl(websocket.PongMessage, []byte("pong"), time.Now().Add(5*time.Second))
+		})
 		c := ws.PutConn(sessionID, userID, conn.Conn)
 		c.Start()
 	})

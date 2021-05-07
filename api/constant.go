@@ -64,6 +64,9 @@ const CodeSMSWrong = 202
  * WebSocket Type code
  */
 
+// TypePong 新好友请求
+const TypePong = 2
+
 // TypeNewFriendApply 新好友请求
 const TypeNewFriendApply = 100
 
