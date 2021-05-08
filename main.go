@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/sirupsen/logrus"
+	chatApi "github.com/thss-cercis/cercis-server/api/chat"
 	friendApi "github.com/thss-cercis/cercis-server/api/friend"
 	mobileApi "github.com/thss-cercis/cercis-server/api/mobile"
 	searchApi "github.com/thss-cercis/cercis-server/api/search"
@@ -81,7 +82,19 @@ func main() {
 	search.Get("/users", searchApi.SearchUser)
 
 	// chat
-	// chat := v1.Group("/chat", middleware.RedisSessionAuthenticate)
+	chat := v1.Group("/chat", middleware.RedisSessionAuthenticate)
+	chat.Get("/private", chatApi.GetPrivateChat)
+	chat.Post("/private", chatApi.AddPrivateChat)
+	chat.Post("/group", chatApi.AddGroupChat)
+	chat.Get("/all", chatApi.GetAllChats)
+	chat.Put("/group", chatApi.ModifyGroupChat)
+	chat.Get("/", chatApi.GetAllChatMembers)
+	chat.Delete("/", chatApi.DeleteChat)
+	chat.Post("/group/member", chatApi.InviteChatMember)
+	chat.Put("/group/member/alias", chatApi.ModifyChatMemberAlias)
+	chat.Put("/group/member/perm", chatApi.ModifyChatMemberPerm)
+	chat.Put("/group/member/owner", chatApi.ChangeGroupOwner)
+	chat.Delete("/group/member", chatApi.DeleteChatMember)
 
 	err := app.Listen(fmt.Sprintf("%v:%v", cf.Server.Host, cf.Server.Port))
 	if err != nil {

@@ -1,7 +1,7 @@
 package validator
 
 import (
-	v "gopkg.in/go-playground/validator.v9"
+	v "github.com/go-playground/validator/v10"
 	"regexp"
 )
 

@@ -27,6 +27,18 @@ const MsgSMSWrong = "验证码错误"
 // MsgUserAlreadyExist 用户已经存在
 const MsgUserAlreadyExist = "用户已经存在"
 
+// MsgChatError 聊天服务异常
+const MsgChatError = "聊天服务异常"
+
+// MsgChatCreateFail 创建聊天失败
+const MsgChatCreateFail = "创建聊天失败"
+
+// MsgChatDeleteFail 创建聊天失败
+const MsgChatDeleteFail = "删除聊天失败"
+
+// MsgChatMemberAddFail 添加群聊成员失败
+const MsgChatMemberAddFail = "添加聊天成员失败"
+
 // CodeFailure 未知错误
 const CodeFailure = -1
 
@@ -59,6 +71,18 @@ const CodeSMSTooOften = 201
 
 // CodeSMSWrong SMS 验证码错误
 const CodeSMSWrong = 202
+
+// CodeChatError 聊天服务异常
+const CodeChatError = 300
+
+// CodeChatCreateFail 创建聊天失败
+const CodeChatCreateFail = 301
+
+// CodeChatDeleteFail 删除聊天失败
+const CodeChatDeleteFail = 302
+
+// CodeChatMemberAddFail 添加群聊成员失败
+const CodeChatMemberAddFail = 303
 
 /*
  * WebSocket Type code

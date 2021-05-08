@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/thss-cercis/cercis-server/db/chat"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -33,7 +34,7 @@ func GetDB() *gorm.DB {
 func AutoMigrate() {
 	db := GetDB()
 	err := db.Migrator().AutoMigrate(
-		&user.User{}, &user.FriendEntry{}, &user.FriendApply{},
+		&user.User{}, &user.FriendEntry{}, &user.FriendApply{}, &chat.Chat{}, &chat.ChatUser{}, &chat.Message{},
 	)
 	if err != nil {
 		panic(err)
@@ -41,5 +42,10 @@ func AutoMigrate() {
 	// id of `users` start from 100001
 	if cnt, err := user.GetUserCount(db); err == nil && cnt == 0 {
 		db.Exec("alter sequence users_id_seq restart 100001")
+	}
+	//创建 join 表
+	err = db.SetupJoinTable(&chat.Chat{}, "Members", &chat.ChatUser{})
+	if err != nil {
+		panic(err)
 	}
 }

@@ -18,13 +18,13 @@ const (
 // FriendApply 好友申请项的 dao
 type FriendApply struct {
 	ID     int64 `gorm:"primarykey" json:"id"`
-	FromID int64 `gorm:"index:idx_from;" json:"from_id"`
-	ToID   int64 `gorm:"index:idx_to;" json:"to_id"`
+	FromID int64 `gorm:"type:bigint not null;index:idx_from;" json:"from_id"`
+	ToID   int64 `gorm:"type:bigint not null;index:idx_to;" json:"to_id"`
 	// Alias 表示申请人给接受者预设的备注
-	Alias string `gorm:"type:varChar(127)" json:"alias"`
+	Alias string `gorm:"type:varChar(127) not null" json:"alias"`
 	// Remark
-	Remark string           `gorm:"type:varChar(255)" json:"remark"`
-	State  FriendApplyState `gorm:"type:smallint;check:state >= -1 and state <= 1" json:"state"`
+	Remark string           `gorm:"type:varChar(255) not null" json:"remark"`
+	State  FriendApplyState `gorm:"type:smallint not null;check:state >= -1 and state <= 1" json:"state"`
 
 	CreatedAt time.Time             `json:"created_at"`
 	UpdatedAt time.Time             `json:"updated_at"`

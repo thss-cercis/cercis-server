@@ -12,8 +12,8 @@ func SearchUser(c *fiber.Ctx) error {
 		ID       int64  `json:"id" form:"id" validate:"required_without_all=Mobile NickName"`
 		Mobile   string `json:"mobile" form:"mobile" validate:"omitempty,phone_number"`
 		NickName string `json:"nickname" form:"nickname"`
-		Offset   int64  `json:"offset" xml:"offset"`
-		Limit    int64  `json:"limit" xml:"limit"`
+		Offset   int64  `json:"offset" form:"offset"`
+		Limit    int64  `json:"limit" form:"limit"`
 	})
 
 	if ok, err := api.ParamParserWrap(c, req); !ok {
@@ -28,6 +28,7 @@ func SearchUser(c *fiber.Ctx) error {
 		ID       int64  `json:"id"`
 		Mobile   string `json:"mobile,omitempty"`
 		NickName string `json:"nickname"`
+		Avatar   string `json:"avatar"`
 	}
 	userToResType := func(u *user.User) resType {
 		if u.AllowShowPhone {
@@ -35,11 +36,13 @@ func SearchUser(c *fiber.Ctx) error {
 				ID:       u.ID,
 				Mobile:   u.Mobile,
 				NickName: u.NickName,
+				Avatar:   u.Avatar,
 			}
 		} else {
 			return resType{
 				ID:       u.ID,
 				NickName: u.NickName,
+				Avatar:   u.Avatar,
 			}
 		}
 	}
