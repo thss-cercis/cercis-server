@@ -13,20 +13,20 @@ type ChatType int64
 
 const (
 	// ChatTypePrivate 私聊
-	ChatTypePrivate = 0
+	ChatTypePrivate = iota
 	// ChatTypeGroup 群聊
-	ChatTypeGroup = 1
+	ChatTypeGroup
 )
 
 type MemberPermission int64
 
 const (
 	// PermNormal 狗群员
-	PermNormal = 0
+	PermNormal = iota
 	// PermAdmin 狗管理
-	PermAdmin = 1
+	PermAdmin
 	// PermOwner 狗群主
-	PermOwner = 2
+	PermOwner
 )
 
 // Chat 聊天列表项的 dao
@@ -54,6 +54,7 @@ type ChatUser struct {
 	Permission MemberPermission `gorm:"type:smallint not null;check:permission >= 0;default:0;" json:"permission"`
 
 	CreatedAt time.Time             `json:"created_at"`
+	UpdatedAt time.Time             `json:"-"`
 	DeletedAt soft_delete.DeletedAt `gorm:"uniqueIndex:idx_chat_user_delete" json:"deleted_at"`
 }
 
@@ -86,7 +87,7 @@ func CreatePrivateChat(db *gorm.DB, user1 int64, user2 int64) (*Chat, error) {
 	return chat, tx.Commit().Error
 }
 
-// CreateGroupChat 创建群聊，members 为成员 ID 的集合，允许为空
+// CreateGroupChat 创建群聊，members 为成员 UserID 的集合，允许为空
 func CreateGroupChat(db *gorm.DB, name string, ownerID int64, members mapset.Set) (*Chat, error) {
 	var chat *Chat = nil
 	tx := db.Begin()
@@ -117,6 +118,15 @@ func CreateGroupChat(db *gorm.DB, name string, ownerID int64, members mapset.Set
 		return nil, err
 	}
 	return chat, tx.Commit().Error
+}
+
+// CheckIfInChat 判断用户是否在属于某个聊天
+func CheckIfInChat(db *gorm.DB, chatID int64, userID int64) bool {
+	_, err := GetChatMember(db, chatID, userID)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 // GetChat 获得聊天
@@ -188,7 +198,7 @@ func DeleteChat(db *gorm.DB, execID int64, chatID int64) error {
 	})
 }
 
-// AddChatMember 通过用户 ID 和聊天 ID 加入新成员
+// AddChatMember 通过用户 UserID 和聊天 UserID 加入新成员
 func AddChatMember(db *gorm.DB, chatID int64, userID int64) (*ChatUser, error) {
 	tx := db.Begin()
 	chat, err := GetChat(tx, chatID)
@@ -214,7 +224,7 @@ func AddChatMember(db *gorm.DB, chatID int64, userID int64) (*ChatUser, error) {
 // GetChatMember 获得某个群成员表项
 func GetChatMember(db *gorm.DB, chatID int64, userID int64) (*ChatUser, error) {
 	chatUser := &ChatUser{}
-	return chatUser, db.First(chatUser, "chat_id = ? AND user_id = ?", chatID, userID).Error
+	return chatUser, db.Where("chat_id = ? AND user_id = ?", chatID, userID).First(chatUser).Error
 }
 
 // GetChatMembers 获得一个群的所有成员表项
@@ -296,7 +306,7 @@ func ChangeGroupOwner(db *gorm.DB, execID int64, chatID int64, userID int64) err
 	})
 }
 
-// DeleteChatMember 通过用户 ID 和聊天 ID 删除成员，execID 为执行者的 ID，会查询权限。可以删除自身.
+// DeleteChatMember 通过用户 UserID 和聊天 UserID 删除成员，execID 为执行者的 UserID，会查询权限。可以删除自身.
 func DeleteChatMember(db *gorm.DB, execID int64, chatID int64, userID int64) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		chat, err := GetChat(tx, chatID)

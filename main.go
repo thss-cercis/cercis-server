@@ -95,6 +95,11 @@ func main() {
 	chat.Put("/group/member/perm", chatApi.ModifyChatMemberPerm)
 	chat.Put("/group/member/owner", chatApi.ChangeGroupOwner)
 	chat.Delete("/group/member", chatApi.DeleteChatMember)
+	// chat - message
+	chat.Post("/message", chatApi.AddMessage)
+	chat.Get("/message", chatApi.GetMessage)
+	chat.Get("/messages", chatApi.GetMessages)
+	chat.Post("/message/withdraw", chatApi.WithdrawMessage)
 
 	err := app.Listen(fmt.Sprintf("%v:%v", cf.Server.Host, cf.Server.Port))
 	if err != nil {

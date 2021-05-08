@@ -48,7 +48,7 @@ func SearchUser(c *fiber.Ctx) error {
 	}
 
 	users := make([]resType, 0)
-	//reqID, _ := strconv.Atoi(req.ID)
+	//reqID, _ := strconv.Atoi(req.UserID)
 	if req.ID != 0 {
 		u, err := user.GetUserByID(db.GetDB(), req.ID)
 		if err == nil && u != nil {

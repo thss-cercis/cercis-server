@@ -49,7 +49,7 @@ func CreateUser(db *gorm.DB, user *User) (*User, error) {
 	return user, db.Create(user).Error
 }
 
-// GetUserByID 通过 ID 查找一个用户
+// GetUserByID 通过 UserID 查找一个用户
 //
 // Throw: gorm.ErrRecordNotFound
 func GetUserByID(db *gorm.DB, userID int64) (*User, error) {

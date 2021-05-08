@@ -83,7 +83,7 @@ func AddGroupChat(c *fiber.Ctx) error {
 // GetPrivateChat 获得私聊 api
 func GetPrivateChat(c *fiber.Ctx) error {
 	req := new(struct {
-		ID int64 `json:"id" validate:"required"`
+		UserID int64 `json:"user_id" query:"user_id" validate:"required"`
 	})
 
 	if ok, err := api.ParamParserWrap(c, req); !ok {
@@ -99,7 +99,7 @@ func GetPrivateChat(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	chat, err := chat2.GetPrivateChat(db.GetDB(), userID, req.ID)
+	chat, err := chat2.GetPrivateChat(db.GetDB(), userID, req.UserID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeChatError, Msg: util.MsgWithError(api.MsgChatError, err)})
 	}
@@ -230,7 +230,7 @@ func InviteChatMember(c *fiber.Ctx) error {
 // GetAllChatMembers 获得所有聊天成员
 func GetAllChatMembers(c *fiber.Ctx) error {
 	req := new(struct {
-		ID int64 `json:"id" validate:"required"`
+		ChatID int64 `json:"chat_id" query:"chat_id" validate:"required"`
 	})
 
 	if ok, err := api.ParamParserWrap(c, req); !ok {
@@ -246,7 +246,7 @@ func GetAllChatMembers(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	members, err := chat2.GetChatMembers(db.GetDB(), req.ID)
+	members, err := chat2.GetChatMembers(db.GetDB(), req.ChatID)
 	if err != nil {
 		return err
 	}
