@@ -94,6 +94,15 @@ func GetMessages(db *gorm.DB, chatID int64, userID int64, fromID int64, toID int
 	return messages, tx.Commit().Error
 }
 
+// GetLatestMessageID 获得某个 chat 的最新消息 id
+func GetLatestMessageID(db *gorm.DB, chatID int64) (int64, error) {
+	var ret int64
+	if err := db.Model(&Message{}).Where("chat_id = ?", chatID).Select("MAX(message_id)").First(&ret).Error; err != nil {
+		return 0, err
+	}
+	return ret, nil
+}
+
 // WithdrawMessage 使用 userID 的身份，撤回某一条消息
 func WithdrawMessage(db *gorm.DB, chatID int64, userID int64, messageID int64) error {
 	return db.Transaction(func(tx *gorm.DB) error {

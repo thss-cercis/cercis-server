@@ -49,7 +49,7 @@ func ModifyUser(c *fiber.Ctx) error {
 
 	user, err := userDB.GetUserByID(db.GetDB(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: api.MsgUserNotFound})
 	}
 
 	// TODO: 暂时不做更改内容的校验
@@ -107,7 +107,7 @@ func UserInfo(c *fiber.Ctx) error {
 
 	u, err := userDB.GetUserByID(db.GetDB(), req.ID)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUserNotFound, nil)})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeFailure, Msg: util.MsgWithError(api.MsgUserNotFound, nil)})
 	}
 
 	type resType struct {
@@ -160,7 +160,7 @@ func ModifyPassword(c *fiber.Ctx) error {
 
 	user, err := userDB.GetUserByID(db.GetDB(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
 	}
 
 	if !security.CheckPasswordHash(req.OldPwd, user.Password) {
@@ -210,7 +210,7 @@ func RecoverPassword(c *fiber.Ctx) error {
 
 	user, err := userDB.GetUserByMobile(db.GetDB(), req.Mobile)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
+		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeUserIDNotFound, Msg: util.MsgWithError(api.MsgUserNotFound, err)})
 	}
 
 	// 更改密码
