@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/thss-cercis/cercis-server/db/activity"
 	"github.com/thss-cercis/cercis-server/db/chat"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -35,6 +36,7 @@ func AutoMigrate() {
 	db := GetDB()
 	err := db.Migrator().AutoMigrate(
 		&user.User{}, &user.FriendEntry{}, &user.FriendApply{}, &chat.Chat{}, &chat.ChatUser{}, &chat.Message{},
+		&activity.Activity{}, &activity.ActivityMedium{}, &activity.ActivityComment{},
 	)
 	if err != nil {
 		panic(err)

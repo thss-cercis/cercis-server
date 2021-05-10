@@ -96,3 +96,9 @@ const TypeNewFriendApply = 100
 
 // TypeFriendListUpdate 好友列表更新
 const TypeFriendListUpdate = 101
+
+// TypeAddNewMessage 新消息
+const TypeAddNewMessage = 200
+
+// TypeWithdrawMessage 撤回消息
+const TypeWithdrawMessage = 200

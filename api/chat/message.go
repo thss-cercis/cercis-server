@@ -2,12 +2,20 @@ package chat
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"github.com/thss-cercis/cercis-server/api"
 	"github.com/thss-cercis/cercis-server/db"
 	"github.com/thss-cercis/cercis-server/db/chat"
+	logger2 "github.com/thss-cercis/cercis-server/logger"
 	"github.com/thss-cercis/cercis-server/middleware"
 	"github.com/thss-cercis/cercis-server/util"
+	"github.com/thss-cercis/cercis-server/ws"
 )
+
+var logMsgFields = logrus.Fields{
+	"module": "message",
+	"api":    true,
+}
 
 // AddMessage 添加新消息 api
 func AddMessage(c *fiber.Ctx) error {
@@ -35,6 +43,37 @@ func AddMessage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeChatError, Msg: util.MsgWithError(api.MsgChatError, err)})
 	}
+
+	// websocket
+	go func() {
+		chatMembers, err := chat.GetChatMembers(db.GetDB(), req.ChatID)
+		if err != nil {
+			logger := logger2.GetLogger()
+			logger.WithFields(logMsgFields).Errorf("websocket to send msg notification fail for chat %v", req.ChatID)
+			return
+		}
+		sum := util.FirstNCharOfString(req.Message, 30)
+		for _, chatMember := range chatMembers {
+			err := ws.WriteToUser(chatMember.UserID, &struct {
+				Type int64 `json:"type"`
+				Msg  struct {
+					ChatID int64  `json:"chat_id"`
+					MsgID  int64  `json:"msg_id"`
+					Sum    string `json:"sum"`
+				}
+			}{
+				Type: api.TypeAddNewMessage,
+				Msg: struct {
+					ChatID int64  `json:"chat_id"`
+					MsgID  int64  `json:"msg_id"`
+					Sum    string `json:"sum"`
+				}{ChatID: msg.ChatID, MsgID: msg.ID, Sum: sum},
+			})
+			if err != nil {
+				continue
+			}
+		}
+	}()
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: msg})
 }
@@ -120,6 +159,34 @@ func WithdrawMessage(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeChatError, Msg: util.MsgWithError(api.MsgChatError, err)})
 	}
+
+	// websocket
+	go func() {
+		chatMembers, err := chat.GetChatMembers(db.GetDB(), req.ChatID)
+		if err != nil {
+			logger := logger2.GetLogger()
+			logger.WithFields(logMsgFields).Errorf("websocket to send msg withdraw notification fail for chat %v", req.ChatID)
+			return
+		}
+		for _, chatMember := range chatMembers {
+			err := ws.WriteToUser(chatMember.UserID, &struct {
+				Type int64 `json:"type"`
+				Msg  struct {
+					ChatID int64 `json:"chat_id"`
+					MsgID  int64 `json:"msg_id"`
+				}
+			}{
+				Type: api.TypeWithdrawMessage,
+				Msg: struct {
+					ChatID int64 `json:"chat_id"`
+					MsgID  int64 `json:"msg_id"`
+				}{ChatID: req.ChatID, MsgID: req.MessageID},
+			})
+			if err != nil {
+				continue
+			}
+		}
+	}()
 
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
 }

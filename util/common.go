@@ -10,3 +10,11 @@ func MsgWithError(msg string, err error) string {
 	}
 	return fmt.Sprintf("Msg: %s", msg)
 }
+
+func FirstNCharOfString(s string, n int) string {
+	if len(s) < n {
+		return s
+	} else {
+		return s[0:n]
+	}
+}
