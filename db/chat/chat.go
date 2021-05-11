@@ -129,6 +129,18 @@ func CheckIfInChat(db *gorm.DB, chatID int64, userID int64) bool {
 	return true
 }
 
+func CheckIfUserInChats(db *gorm.DB, userID int64, chatIDs []int64) bool {
+	chatsLen := len(chatIDs)
+	if chatIDs == nil || chatsLen == 0 {
+		return true
+	}
+	var count int64
+	if err := db.Model(&ChatUser{}).Where("user_id = ? AND chat_id IN ?", userID, chatIDs).Count(&count).Error; err != nil {
+		return false
+	}
+	return int64(chatsLen) == count
+}
+
 // GetChat 获得聊天
 func GetChat(db *gorm.DB, chatID int64) (*Chat, error) {
 	chat := &Chat{ID: chatID}

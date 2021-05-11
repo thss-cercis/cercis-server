@@ -99,6 +99,8 @@ func main() {
 	chat.Post("/message", chatApi.AddMessage)
 	chat.Get("/message", chatApi.GetMessage)
 	chat.Get("/messages", chatApi.GetMessages)
+	chat.Post("/messages/latest", chatApi.GetLatestMessages) // Get 方法不好解析数组
+	chat.Get("/messages/all-latest", chatApi.GetAllChatsLatestMessageID)
 	chat.Post("/message/withdraw", chatApi.WithdrawMessage)
 
 	err := app.Listen(fmt.Sprintf("%v:%v", cf.Server.Host, cf.Server.Port))

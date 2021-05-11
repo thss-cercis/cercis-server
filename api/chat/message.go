@@ -136,6 +136,48 @@ func GetMessages(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: messages})
 }
 
+// GetLatestMessages 获得所有获得某个用户给定某些聊天的最新消息 api
+func GetLatestMessages(c *fiber.Ctx) error {
+	req := new(struct {
+		ChatIDs []int64 `json:"chat_ids"`
+	})
+
+	if ok, err := api.ParamParserWrap(c, req); !ok {
+		return err
+	}
+
+	if ok, err := api.ValidateWrap(c, req); !ok {
+		return err
+	}
+
+	userID, ok := middleware.GetUserIDFromSession(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
+	}
+
+	msgs, err := chat.GetLatestMessages(db.GetDB(), userID, req.ChatIDs)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: msgs})
+}
+
+// GetAllChatsLatestMessageID 获得某个用户所有的聊天的最新消息 id 的 api
+func GetAllChatsLatestMessageID(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserIDFromSession(c)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
+	}
+
+	rets, err := chat.GetAllChatsLatestMessageID(db.GetDB(), userID)
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: rets})
+}
+
 // WithdrawMessage 撤回一条消息 api
 func WithdrawMessage(c *fiber.Ctx) error {
 	req := new(struct {
@@ -166,7 +208,7 @@ func WithdrawMessage(c *fiber.Ctx) error {
 		chatMembers, err := chat.GetChatMembers(db.GetDB(), req.ChatID)
 		if err != nil {
 			logger := logger2.GetLogger()
-			logger.WithFields(logMsgFields).Errorf("websocket to send msg withdraw notification fail for chat %v", req.ChatID)
+			logger.WithFields(logMsgFields).Errorf("websocket to send msg notification fail for chat %v", req.ChatID)
 			return
 		}
 		for _, chatMember := range chatMembers {
@@ -176,6 +218,7 @@ func WithdrawMessage(c *fiber.Ctx) error {
 					ChatID int64        `json:"chat_id"`
 					MsgID  int64        `json:"msg_id"`
 					Type   chat.MsgType `json:"type"`
+					Sum    string       `json:"sum"`
 				}
 			}{
 				Type: api.TypeAddNewMessage,
@@ -183,7 +226,8 @@ func WithdrawMessage(c *fiber.Ctx) error {
 					ChatID int64        `json:"chat_id"`
 					MsgID  int64        `json:"msg_id"`
 					Type   chat.MsgType `json:"type"`
-				}{ChatID: msg.ChatID, MsgID: msg.ID, Type: msg.Type},
+					Sum    string       `json:"sum"`
+				}{ChatID: msg.ChatID, MsgID: msg.ID, Type: msg.Type, Sum: msg.Message},
 			})
 			if err != nil {
 				continue

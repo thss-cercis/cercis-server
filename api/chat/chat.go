@@ -69,7 +69,7 @@ func AddGroupChat(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	tmp := make([]interface{}, len(req.Members))
+	tmp := make([]interface{}, 0)
 	for _, memberID := range req.Members {
 		tmp = append(tmp, memberID)
 	}

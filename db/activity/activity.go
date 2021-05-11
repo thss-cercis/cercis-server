@@ -74,10 +74,54 @@ func GetActivity(db *gorm.DB, activityID int64) (*Activity, error) {
 	return activity, db.Preload("Media").Preload("Comments").First(activity, activityID).Error
 }
 
-// GetActivitiesAfterDate 获得某个用户能够接受到的，在某个时间点（包括此时间）之后的所有动态，如果 d 为零值，则获取所有
-func GetActivitiesAfterDate(db *gorm.DB, userID int64, d time.Time) ([]Activity, error) {
-	// TODO
-	return nil, nil
+// GetActivitiesBefore 获得某个用户能够接受到的，在某个 startID 之前的所有动态，如果 count 为零值，则获取所有
+func GetActivitiesBefore(db *gorm.DB, userID int64, startID int64, count int64) ([]Activity, error) {
+	acs := make([]Activity, 0)
+	if count < 0 {
+		return acs, nil
+	}
+	friends, err := user.GetFriendEntrySelfByUserID(db, userID)
+	if err != nil {
+		return nil, err
+	}
+	friendIDs := make([]int64, 0)
+	for _, friend := range friends {
+		friendIDs = append(friendIDs, friend.FriendID)
+	}
+	tmp := db.Model(&Activity{}).Where("id < ? AND sender_id IN ?", startID, friendIDs).Preload("Media").Preload("Comments").Order("id desc")
+	if count != 0 {
+		tmp = tmp.Limit(int(count))
+	}
+	if err := tmp.Find(&acs).Error; err != nil {
+		return nil, err
+	}
+
+	return acs, nil
+}
+
+// GetActivitiesAfter 获得某个用户能够接受到的，在某个 ID 之后的所有动态，如果 count 为零值，则获取所有
+func GetActivitiesAfter(db *gorm.DB, userID int64, startID int64, count int64) ([]Activity, error) {
+	acs := make([]Activity, 0)
+	if count < 0 {
+		return acs, nil
+	}
+	friends, err := user.GetFriendEntrySelfByUserID(db, userID)
+	if err != nil {
+		return nil, err
+	}
+	friendIDs := make([]int64, 0)
+	for _, friend := range friends {
+		friendIDs = append(friendIDs, friend.FriendID)
+	}
+	tmp := db.Model(&Activity{}).Where("id > ? AND sender_id IN ?", startID, friendIDs).Preload("Media").Preload("Comments").Order("id asc")
+	if count != 0 {
+		tmp = tmp.Limit(int(count))
+	}
+	if err := tmp.Find(&acs).Error; err != nil {
+		return nil, err
+	}
+
+	return acs, nil
 }
 
 // DeleteActivity 删除动态

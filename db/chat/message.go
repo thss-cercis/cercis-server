@@ -44,25 +44,24 @@ type Message struct {
 
 // CreateMessage 创建一条新的信息，每个 chat 中都有自己独立的一套从 1 开始的 message_id
 func CreateMessage(db *gorm.DB, chatID int64, senderID int64, typ MsgType, message string) (*Message, error) {
-	tx := db.Begin()
 	msg := &Message{}
-	var id int64
-	timeNow := time.Now()
-	err := tx.Raw("INSERT INTO messages AS m1 (chat_id, message_id, type, message, sender_id, is_withdrawn, created_at, updated_at, deleted_at) "+
-		"SELECT ?, COALESCE(MAX(m2.message_id),0)+1, ?, ?, ?, ?, ?, ?, ? FROM messages AS m2 WHERE m2.chat_id = ? AND m2.deleted_at = 0"+
-		"RETURNING m1.id",
-		chatID, typ, message, senderID, false, timeNow, timeNow, 0, chatID).Scan(&id).Error
-	if err == nil && id != 0 {
-		// 插入成功
-		if err := tx.First(msg, id).Error; err != nil {
-			tx.Rollback()
-			return nil, err
+	return msg, db.Transaction(func(tx *gorm.DB) error {
+		var id int64
+		timeNow := time.Now()
+		err := tx.Raw("INSERT INTO messages AS m1 (chat_id, message_id, type, message, sender_id, is_withdrawn, created_at, updated_at, deleted_at) "+
+			"SELECT ?, COALESCE(MAX(m2.message_id),0)+1, ?, ?, ?, ?, ?, ?, ? FROM messages AS m2 WHERE m2.chat_id = ? AND m2.deleted_at = 0"+
+			"RETURNING m1.id",
+			chatID, typ, message, senderID, false, timeNow, timeNow, 0, chatID).Scan(&id).Error
+		if err == nil && id != 0 {
+			// 插入成功
+			if err := tx.First(msg, id).Error; err != nil {
+				return err
+			}
+			return nil
+		} else {
+			return err
 		}
-		return msg, tx.Commit().Error
-	} else {
-		tx.Rollback()
-		return nil, err
-	}
+	})
 }
 
 // GetMessage 使用 userID 的身份，获取从 chat 中某条消息.
@@ -103,32 +102,81 @@ func GetMessages(db *gorm.DB, chatID int64, userID int64, fromID int64, toID int
 	return messages, tx.Commit().Error
 }
 
-// GetLatestMessageID 获得某个 chat 的最新消息 id
-func GetLatestMessageID(db *gorm.DB, chatID int64) (int64, error) {
-	var ret int64
-	if err := db.Model(&Message{}).Where("chat_id = ?", chatID).Select("MAX(message_id)").First(&ret).Error; err != nil {
-		return 0, err
+// GetLatestMessages 获得某个用户给定某些聊天的最新消息
+func GetLatestMessages(db *gorm.DB, userID int64, chatIDs []int64) ([]Message, error) {
+	var ret = make([]Message, 0)
+	if chatIDs == nil || len(chatIDs) == 0 {
+		return ret, nil
 	}
-	return ret, nil
+	if !CheckIfUserInChats(db, userID, chatIDs) {
+		return nil, errors.New("user is not in some of the chats")
+	}
+	// 获取最新信息
+	err := db.Raw("SELECT * FROM messages AS m WHERE (m.chat_id, m.message_id) IN "+
+		"(SELECT chat_id, MAX(message_id) FROM messages WHERE chat_id IN ? GROUP BY chat_id)",
+		chatIDs).
+		Scan(&ret).Error
+	return ret, err
+}
+
+// GetAllChatsLatestMessageID 获得某个用户所有的聊天的最新消息 id
+func GetAllChatsLatestMessageID(db *gorm.DB, userID int64) ([]struct {
+	ChatID       int64 `json:"chat_id"`
+	MaxMessageID int64 `json:"max_message_id"`
+}, error) {
+	chats, err := GetAllChats(db, userID)
+	if err != nil {
+		return nil, err
+	}
+	chatIDs := make([]int64, 0)
+	for _, chats := range chats {
+		chatIDs = append(chatIDs, chats.ID)
+	}
+	// 获取最新信息
+	var ret = make([]struct {
+		ChatID       int64 `json:"chat_id"`
+		MaxMessageID int64 `json:"max_message_id"`
+	}, 0)
+	err = db.Model(&Message{}).
+		Select("chat_id, MAX(message_id) AS max_message_id").
+		Where("chat_id IN ?", chatIDs).
+		Group("chat_id").
+		Find(&ret).Error
+	return ret, err
+}
+
+// CheckIsWithdrawn 判断消息是否被撤回
+func CheckIsWithdrawn(db *gorm.DB, chatID int64, messageID int64) bool {
+	var count int64
+	if err := db.Model(&Message{}).
+		Where("chat_id = ? AND type = ? AND message = ?", chatID, MsgTypeWithdraw, strconv.Itoa(int(messageID))).
+		Count(&count).Error; err != nil {
+		return false
+	}
+	return count >= 1
 }
 
 // WithdrawMessage 使用 userID 的身份，撤回某一条消息
 func WithdrawMessage(db *gorm.DB, chatID int64, userID int64, messageID int64) (*Message, error) {
-	tx := db.Begin()
-	message, err := GetMessage(tx, chatID, userID, messageID)
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-	if message.SenderID != chatID {
-		tx.Rollback()
-		return nil, errors.New("could not withdraw other one's message")
-	}
-	msg, err := CreateMessage(tx, chatID, userID, MsgTypeWithdraw, strconv.Itoa(int(messageID)))
-	if err != nil {
-		tx.Rollback()
-		return nil, err
-	}
-
-	return msg, tx.Commit().Error
+	var msg *Message
+	return msg, db.Transaction(func(tx *gorm.DB) error {
+		message, err := GetMessage(db, chatID, userID, messageID)
+		if err != nil {
+			return err
+		}
+		if CheckIsWithdrawn(tx, chatID, messageID) {
+			return errors.New("the message is already withdrawn")
+		}
+		if message.SenderID != userID {
+			return errors.New("could not withdraw other one's message")
+		}
+		if message.Type == MsgTypeWithdraw {
+			return errors.New("could not withdraw a withdraw message")
+		}
+		msg, err = CreateMessage(db, chatID, userID, MsgTypeWithdraw, strconv.Itoa(int(messageID)))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }

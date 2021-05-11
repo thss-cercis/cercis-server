@@ -12,9 +12,10 @@ func MsgWithError(msg string, err error) string {
 }
 
 func FirstNCharOfString(s string, n int) string {
-	if len(s) < n {
+	r := []rune(s)
+	if len(r) < n {
 		return s
 	} else {
-		return s[0:n]
+		return string(r[0:n])
 	}
 }
