@@ -26,9 +26,9 @@ type MediumType int64
 
 const (
 	// MediumTypeImageURL 图片类型 url
-	MediumTypeImageURL = iota
+	MediumTypeImageURL = 0
 	// MediumTypeVideoURL 视频类型 url
-	MediumTypeVideoURL
+	MediumTypeVideoURL = 1
 )
 
 type ActivityMedium struct {
@@ -43,8 +43,8 @@ type ActivityMedium struct {
 }
 
 type MediumCapsule struct {
-	Type    MediumType
-	Content string
+	Type    MediumType `json:"type" validate:"required,gte=0"`
+	Content string     `json:"content" validate:"required"`
 }
 
 // CreateActivity 创建新动态，media 可以为 nil
@@ -75,7 +75,7 @@ func GetActivity(db *gorm.DB, activityID int64) (*Activity, error) {
 }
 
 // GetActivitiesBefore 获得某个用户能够接受到的，在某个 startID 之前的所有动态，如果 count 为零值，则获取所有
-func GetActivitiesBefore(db *gorm.DB, userID int64, startID int64, count int64) ([]Activity, error) {
+func GetActivitiesBefore(db *gorm.DB, userID int64, activityID int64, count int64) ([]Activity, error) {
 	acs := make([]Activity, 0)
 	if count < 0 {
 		return acs, nil
@@ -88,7 +88,7 @@ func GetActivitiesBefore(db *gorm.DB, userID int64, startID int64, count int64) 
 	for _, friend := range friends {
 		friendIDs = append(friendIDs, friend.FriendID)
 	}
-	tmp := db.Model(&Activity{}).Where("id < ? AND sender_id IN ?", startID, friendIDs).Preload("Media").Preload("Comments").Order("id desc")
+	tmp := db.Model(&Activity{}).Where("id < ? AND sender_id IN ?", activityID, friendIDs).Preload("Media").Preload("Comments").Order("id desc")
 	if count != 0 {
 		tmp = tmp.Limit(int(count))
 	}
@@ -100,7 +100,7 @@ func GetActivitiesBefore(db *gorm.DB, userID int64, startID int64, count int64) 
 }
 
 // GetActivitiesAfter 获得某个用户能够接受到的，在某个 ID 之后的所有动态，如果 count 为零值，则获取所有
-func GetActivitiesAfter(db *gorm.DB, userID int64, startID int64, count int64) ([]Activity, error) {
+func GetActivitiesAfter(db *gorm.DB, userID int64, activityID int64, count int64) ([]Activity, error) {
 	acs := make([]Activity, 0)
 	if count < 0 {
 		return acs, nil
@@ -113,7 +113,7 @@ func GetActivitiesAfter(db *gorm.DB, userID int64, startID int64, count int64) (
 	for _, friend := range friends {
 		friendIDs = append(friendIDs, friend.FriendID)
 	}
-	tmp := db.Model(&Activity{}).Where("id > ? AND sender_id IN ?", startID, friendIDs).Preload("Media").Preload("Comments").Order("id asc")
+	tmp := db.Model(&Activity{}).Where("id > ? AND sender_id IN ?", activityID, friendIDs).Preload("Media").Preload("Comments").Order("id asc")
 	if count != 0 {
 		tmp = tmp.Limit(int(count))
 	}

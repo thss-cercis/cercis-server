@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/sirupsen/logrus"
+	activityApi "github.com/thss-cercis/cercis-server/api/activity"
 	chatApi "github.com/thss-cercis/cercis-server/api/chat"
 	friendApi "github.com/thss-cercis/cercis-server/api/friend"
 	mobileApi "github.com/thss-cercis/cercis-server/api/mobile"
@@ -102,6 +103,16 @@ func main() {
 	chat.Post("/messages/latest", chatApi.GetLatestMessages) // Get 方法不好解析数组
 	chat.Get("/messages/all-latest", chatApi.GetAllChatsLatestMessageID)
 	chat.Post("/message/withdraw", chatApi.WithdrawMessage)
+
+	// activity
+	activity := v1.Group("/activity", middleware.RedisSessionAuthenticate)
+	activity.Post("", activityApi.AddActivity)
+	activity.Get("", activityApi.GetActivity)
+	activity.Get("/before", activityApi.GetActivitiesBefore)
+	activity.Get("/after", activityApi.GetActivitiesAfter)
+	activity.Delete("", activityApi.DeleteActivity)
+	activity.Post("/comment", activityApi.CommentActivity)
+	activity.Delete("/comment", activityApi.DeleteActivityComment)
 
 	err := app.Listen(fmt.Sprintf("%v:%v", cf.Server.Host, cf.Server.Port))
 	if err != nil {
