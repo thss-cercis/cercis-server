@@ -19,10 +19,9 @@ var logMsgFields = logrus.Fields{
 
 // AddMessage 添加新消息 api
 func AddMessage(c *fiber.Ctx) error {
-	// TODO: type 限制
 	req := new(struct {
 		ChatID  int64        `json:"chat_id" validate:"required"`
-		Type    chat.MsgType `json:"type" validate:"gte=0"`
+		Type    chat.MsgType `json:"type" validate:"gte=0,lte=5"`
 		Message string       `json:"message" validate:"min=1"`
 	})
 
@@ -57,17 +56,19 @@ func AddMessage(c *fiber.Ctx) error {
 			err := ws.WriteToUser(chatMember.UserID, &struct {
 				Type int64 `json:"type"`
 				Msg  struct {
-					ChatID int64  `json:"chat_id"`
-					MsgID  int64  `json:"msg_id"`
-					Sum    string `json:"sum"`
+					ChatID int64        `json:"chat_id"`
+					MsgID  int64        `json:"msg_id"`
+					Type   chat.MsgType `json:"type"`
+					Sum    string       `json:"sum"`
 				}
 			}{
 				Type: api.TypeAddNewMessage,
 				Msg: struct {
-					ChatID int64  `json:"chat_id"`
-					MsgID  int64  `json:"msg_id"`
-					Sum    string `json:"sum"`
-				}{ChatID: msg.ChatID, MsgID: msg.ID, Sum: sum},
+					ChatID int64        `json:"chat_id"`
+					MsgID  int64        `json:"msg_id"`
+					Type   chat.MsgType `json:"type"`
+					Sum    string       `json:"sum"`
+				}{ChatID: msg.ChatID, MsgID: msg.ID, Type: msg.Type, Sum: sum},
 			})
 			if err != nil {
 				continue
@@ -155,7 +156,7 @@ func WithdrawMessage(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(api.BaseRes{Code: api.CodeNotLogin, Msg: api.MsgNotLogin})
 	}
 
-	err := chat.WithdrawMessage(db.GetDB(), req.ChatID, userID, req.MessageID)
+	msg, err := chat.WithdrawMessage(db.GetDB(), req.ChatID, userID, req.MessageID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(api.BaseRes{Code: api.CodeChatError, Msg: util.MsgWithError(api.MsgChatError, err)})
 	}
@@ -172,15 +173,17 @@ func WithdrawMessage(c *fiber.Ctx) error {
 			err := ws.WriteToUser(chatMember.UserID, &struct {
 				Type int64 `json:"type"`
 				Msg  struct {
-					ChatID int64 `json:"chat_id"`
-					MsgID  int64 `json:"msg_id"`
+					ChatID int64        `json:"chat_id"`
+					MsgID  int64        `json:"msg_id"`
+					Type   chat.MsgType `json:"type"`
 				}
 			}{
-				Type: api.TypeWithdrawMessage,
+				Type: api.TypeAddNewMessage,
 				Msg: struct {
-					ChatID int64 `json:"chat_id"`
-					MsgID  int64 `json:"msg_id"`
-				}{ChatID: req.ChatID, MsgID: req.MessageID},
+					ChatID int64        `json:"chat_id"`
+					MsgID  int64        `json:"msg_id"`
+					Type   chat.MsgType `json:"type"`
+				}{ChatID: msg.ChatID, MsgID: msg.ID, Type: msg.Type},
 			})
 			if err != nil {
 				continue
@@ -188,5 +191,5 @@ func WithdrawMessage(c *fiber.Ctx) error {
 		}
 	}()
 
-	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess})
+	return c.Status(fiber.StatusOK).JSON(api.BaseRes{Code: api.CodeSuccess, Msg: api.MsgSuccess, Payload: msg})
 }

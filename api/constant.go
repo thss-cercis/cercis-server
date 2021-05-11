@@ -101,4 +101,4 @@ const TypeFriendListUpdate = 101
 const TypeAddNewMessage = 200
 
 // TypeWithdrawMessage 撤回消息
-const TypeWithdrawMessage = 200
+const TypeWithdrawMessage = 201

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"gorm.io/plugin/soft_delete"
+	"strconv"
 	"time"
 )
 
@@ -11,7 +12,17 @@ type MsgType int64
 
 const (
 	// MsgTypeText 纯文本消息种类
-	MsgTypeText = iota
+	MsgTypeText = 0
+	// MsgTypeImage 图片消息
+	MsgTypeImage = 1
+	// MsgTypeAudio 音频消息
+	MsgTypeAudio = 2
+	// MsgTypeVideo 视频消息
+	MsgTypeVideo = 3
+	// MsgTypeGeo 位置消息
+	MsgTypeGeo = 4
+	// MsgTypeWithdraw 撤回消息
+	MsgTypeWithdraw = 100
 )
 
 type Message struct {
@@ -25,8 +36,6 @@ type Message struct {
 	Message string  `gorm:"text not null" json:"message"`
 	// SenderID 消息所属的用户，外键
 	SenderID int64 `gorm:"type:bigint not null" json:"sender_id"`
-	// IsWithdrawn 消息是否撤回
-	IsWithdrawn bool `gorm:"type:boolean not null;default:false" json:"is_withdrawn"`
 
 	CreatedAt time.Time             `json:"created_at"`
 	UpdatedAt time.Time             `json:"updated_at"`
@@ -104,13 +113,22 @@ func GetLatestMessageID(db *gorm.DB, chatID int64) (int64, error) {
 }
 
 // WithdrawMessage 使用 userID 的身份，撤回某一条消息
-func WithdrawMessage(db *gorm.DB, chatID int64, userID int64, messageID int64) error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		message, err := GetMessage(tx, chatID, userID, messageID)
-		if err != nil {
-			return err
-		}
-		message.IsWithdrawn = true
-		return tx.Save(message).Error
-	})
+func WithdrawMessage(db *gorm.DB, chatID int64, userID int64, messageID int64) (*Message, error) {
+	tx := db.Begin()
+	message, err := GetMessage(tx, chatID, userID, messageID)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	if message.SenderID != chatID {
+		tx.Rollback()
+		return nil, errors.New("could not withdraw other one's message")
+	}
+	msg, err := CreateMessage(tx, chatID, userID, MsgTypeWithdraw, strconv.Itoa(int(messageID)))
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	return msg, tx.Commit().Error
 }
