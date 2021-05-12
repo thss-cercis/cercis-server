@@ -132,3 +132,6 @@ const TypeAddNewMessage = 200
 
 // TypeWithdrawMessage 撤回消息
 const TypeWithdrawMessage = 201
+
+// TypeNewActivity 好友有新动态通知
+const TypeNewActivity = 300

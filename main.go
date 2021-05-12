@@ -113,6 +113,8 @@ func main() {
 	activity.Delete("", activityApi.DeleteActivity)
 	activity.Post("/comment", activityApi.CommentActivity)
 	activity.Delete("/comment", activityApi.DeleteActivityComment)
+	activity.Post("/thumbup", activityApi.ThumbUpActivity)
+	activity.Delete("/thumbup", activityApi.ThumbDownActivity)
 
 	err := app.Listen(fmt.Sprintf("%v:%v", cf.Server.Host, cf.Server.Port))
 	if err != nil {

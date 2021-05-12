@@ -13,9 +13,11 @@ type Activity struct {
 	Text     string `gorm:"type:text not null" json:"text"`
 	SenderID int64  `json:"sender_id"`
 
-	Media    []ActivityMedium  `gorm:"foreignKey:ActivityID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Comments []ActivityComment `gorm:"foreignKey:ActivityID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Sender   user.User         `gorm:"foreignKey:SenderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Media    []ActivityMedium  `gorm:"foreignKey:ActivityID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"media"`
+	Comments []ActivityComment `gorm:"foreignKey:ActivityID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"comments"`
+	// ThumbUps 点赞者
+	ThumbUps []ActivityThumbUp `gorm:"foreignKey:ActivityID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"thumb_ups"`
+	Sender   user.User         `gorm:"foreignKey:SenderID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 
 	CreatedAt time.Time             `json:"created_at"`
 	UpdatedAt time.Time             `json:"-"`
@@ -29,12 +31,14 @@ const (
 	MediumTypeImageURL = 0
 	// MediumTypeVideoURL 视频类型 url
 	MediumTypeVideoURL = 1
+	// MediumTypeGeo 地理位置 url
+	MediumTypeGeo = 2
 )
 
 type ActivityMedium struct {
 	ID         int64      `gorm:"primarykey" json:"id"`
 	ActivityID int64      `json:"activity_id"`
-	Type       MediumType `gorm:"type:smallint not null"`
+	Type       MediumType `gorm:"type:smallint not null" json:"type"`
 	Content    string     `gorm:"type:text not null" json:"content"`
 
 	CreatedAt time.Time             `json:"created_at"`
@@ -71,7 +75,8 @@ func CreateActivity(db *gorm.DB, userID int64, text string, media []MediumCapsul
 // GetActivity 获得动态，并且 preload 评论和 media
 func GetActivity(db *gorm.DB, activityID int64) (*Activity, error) {
 	activity := &Activity{}
-	return activity, db.Preload("Media").Preload("Comments").First(activity, activityID).Error
+	return activity, db.Preload("Media").Preload("Comments").Preload("ThumbUps").
+		First(activity, activityID).Error
 }
 
 // GetActivitiesBefore 获得某个用户能够接受到的，在某个 startID 之前的所有动态，如果 count 为零值，则获取所有
@@ -88,7 +93,8 @@ func GetActivitiesBefore(db *gorm.DB, userID int64, activityID int64, count int6
 	for _, friend := range friends {
 		friendIDs = append(friendIDs, friend.FriendID)
 	}
-	tmp := db.Model(&Activity{}).Where("id < ? AND sender_id IN ?", activityID, friendIDs).Preload("Media").Preload("Comments").Order("id desc")
+	tmp := db.Model(&Activity{}).Where("id < ? AND sender_id IN ?", activityID, friendIDs).
+		Preload("Media").Preload("Comments").Preload("ThumbUps").Order("id desc")
 	if count != 0 {
 		tmp = tmp.Limit(int(count))
 	}
@@ -113,7 +119,8 @@ func GetActivitiesAfter(db *gorm.DB, userID int64, activityID int64, count int64
 	for _, friend := range friends {
 		friendIDs = append(friendIDs, friend.FriendID)
 	}
-	tmp := db.Model(&Activity{}).Where("id > ? AND sender_id IN ?", activityID, friendIDs).Preload("Media").Preload("Comments").Order("id asc")
+	tmp := db.Model(&Activity{}).Where("id > ? AND sender_id IN ?", activityID, friendIDs).
+		Preload("Media").Preload("Comments").Preload("ThumbUps").Order("id asc")
 	if count != 0 {
 		tmp = tmp.Limit(int(count))
 	}

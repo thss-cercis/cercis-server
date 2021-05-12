@@ -14,7 +14,7 @@ type ActivityComment struct {
 	CommenterID int64  `json:"commenter_id"`
 	Content     string `gorm:"type:text not null" json:"content"`
 
-	Commenter user.User `gorm:"foreignKey:CommenterID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Commenter user.User `gorm:"foreignKey:CommenterID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 
 	CreatedAt time.Time             `json:"created_at"`
 	UpdatedAt time.Time             `json:"-"`

@@ -36,7 +36,7 @@ func AutoMigrate() {
 	db := GetDB()
 	err := db.Migrator().AutoMigrate(
 		&user.User{}, &user.FriendEntry{}, &user.FriendApply{}, &chat.Chat{}, &chat.ChatUser{}, &chat.Message{},
-		&activity.Activity{}, &activity.ActivityMedium{}, &activity.ActivityComment{},
+		&activity.Activity{}, &activity.ActivityMedium{}, &activity.ActivityComment{}, &activity.ActivityThumbUp{},
 	)
 	if err != nil {
 		panic(err)
