@@ -160,7 +160,7 @@ func GetPrivateChat(db *gorm.DB, user1 int64, user2 int64) (*Chat, error) {
 		// 已经存在这样一个私聊
 		return chat, nil
 	}
-	return nil, errors.New("private chat is already existed")
+	return nil, errors.New("private chat not created yet")
 }
 
 // GetAllChats 获得一个人加入的所有聊天

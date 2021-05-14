@@ -53,14 +53,14 @@ func AddActivity(c *fiber.Ctx) error {
 		}
 		for _, member := range members {
 			err := ws.WriteToUser(member.ID, &struct {
-				Type int64 `json:"type"`
-				Msg  struct {
+				Type     int64 `json:"type"`
+				Activity struct {
 					ActivityID int64 `json:"activity_id"`
 					UserID     int64 `json:"user_id"`
-				} `json:"msg"`
+				} `json:"activity"`
 			}{
 				Type: api.TypeNewActivity,
-				Msg: struct {
+				Activity: struct {
 					ActivityID int64 `json:"activity_id"`
 					UserID     int64 `json:"user_id"`
 				}{ActivityID: ac.ID, UserID: userID},
