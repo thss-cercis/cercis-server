@@ -27,3 +27,7 @@ sms:
   secret: "<aliyun-sms-secret>"
   signname: "幻想乡"
   templatecode: "<sms-template-code>"
+qiniu:
+  accesskey: ""
+  secretkey: ""
+  bucket: "cercis"

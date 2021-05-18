@@ -39,6 +39,11 @@ type Config struct {
 		SignName     string
 		TemplateCode string
 	}
+	Qiniu struct {
+		AccessKey string
+		SecretKey string
+		Bucket    string
+	}
 }
 
 var globalConfig *Config

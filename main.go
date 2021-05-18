@@ -11,6 +11,7 @@ import (
 	friendApi "github.com/thss-cercis/cercis-server/api/friend"
 	mobileApi "github.com/thss-cercis/cercis-server/api/mobile"
 	searchApi "github.com/thss-cercis/cercis-server/api/search"
+	uploadApi "github.com/thss-cercis/cercis-server/api/upload"
 	logger2 "github.com/thss-cercis/cercis-server/logger"
 	"github.com/thss-cercis/cercis-server/util/sms"
 
@@ -115,6 +116,10 @@ func main() {
 	activity.Delete("/comment", activityApi.DeleteActivityComment)
 	activity.Post("/thumbup", activityApi.ThumbUpActivity)
 	activity.Delete("/thumbup", activityApi.ThumbDownActivity)
+
+	// upload
+	upload := v1.Group("/upload", middleware.RedisSessionAuthenticate)
+	upload.Get("", uploadApi.GetUploadToken)
 
 	err := app.Listen(fmt.Sprintf("%v:%v", cf.Server.Host, cf.Server.Port))
 	if err != nil {
