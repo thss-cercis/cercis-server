@@ -68,7 +68,7 @@ func AddMessage(c *fiber.Ctx) error {
 					MsgID  int64        `json:"msg_id"`
 					Type   chat.MsgType `json:"type"`
 					Sum    string       `json:"sum"`
-				}{ChatID: msg.ChatID, MsgID: msg.ID, Type: msg.Type, Sum: sum},
+				}{ChatID: msg.ChatID, MsgID: msg.MessageID, Type: msg.Type, Sum: sum},
 			})
 			if err != nil {
 				continue
@@ -227,7 +227,7 @@ func WithdrawMessage(c *fiber.Ctx) error {
 					MsgID  int64        `json:"msg_id"`
 					Type   chat.MsgType `json:"type"`
 					Sum    string       `json:"sum"`
-				}{ChatID: msg.ChatID, MsgID: msg.ID, Type: msg.Type, Sum: msg.Message},
+				}{ChatID: msg.ChatID, MsgID: msg.MessageID, Type: msg.Type, Sum: msg.Message},
 			})
 			if err != nil {
 				continue
