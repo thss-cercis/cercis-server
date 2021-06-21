@@ -6,6 +6,7 @@ import (
 	"github.com/thss-cercis/cercis-server/api"
 	"github.com/thss-cercis/cercis-server/db"
 	"github.com/thss-cercis/cercis-server/db/chat"
+	"github.com/thss-cercis/cercis-server/db/user"
 	logger2 "github.com/thss-cercis/cercis-server/logger"
 	"github.com/thss-cercis/cercis-server/middleware"
 	"github.com/thss-cercis/cercis-server/util"
@@ -51,24 +52,55 @@ func AddMessage(c *fiber.Ctx) error {
 			logger.WithFields(logMsgFields).Errorf("websocket to send msg notification fail for chat %v", req.ChatID)
 			return
 		}
+		// 找到聊天中发消息人的 ChatUser 项
+		var senderChatUser *chat.ChatUser
+		for _, chatMember := range chatMembers {
+			if chatMember.UserID == userID {
+				senderChatUser = &chatMember
+			}
+		}
+		// 找到发送人的 User 项
+		senderUser, err := user.GetUserByID(db.GetDB(), userID)
+		if err != nil {
+			logger := logger2.GetLogger()
+			logger.WithFields(logMsgFields).Errorf("websocket to send msg notification fail for chat %v", req.ChatID)
+			return
+		}
+		// 截取前 30 个字
 		sum := util.FirstNCharOfString(req.Message, 30)
 		for _, chatMember := range chatMembers {
+			// 获得消息通知中的名称
+			var senderUsername string
+			if senderChatUser != nil && senderChatUser.Alias != "" {
+				senderUsername = senderChatUser.Alias
+			} else {
+				// 获得好友项
+				friendEntry, err := user.GetFriendEntry(db.GetDB(), chatMember.UserID, userID)
+				if err != nil && friendEntry != nil && friendEntry.Alias != "" {
+					senderUsername = friendEntry.Alias
+				} else {
+					senderUsername = senderUser.NickName
+				}
+			}
+			// 写入消息
 			err := ws.WriteToUser(chatMember.UserID, &struct {
 				Type int64 `json:"type"`
 				Msg  struct {
-					ChatID int64        `json:"chat_id"`
-					MsgID  int64        `json:"msg_id"`
-					Type   chat.MsgType `json:"type"`
-					Sum    string       `json:"sum"`
+					ChatID         int64        `json:"chat_id"`
+					MsgID          int64        `json:"msg_id"`
+					Type           chat.MsgType `json:"type"`
+					SenderUsername string       `json:"sender_username"`
+					Sum            string       `json:"sum"`
 				}
 			}{
 				Type: api.TypeAddNewMessage,
 				Msg: struct {
-					ChatID int64        `json:"chat_id"`
-					MsgID  int64        `json:"msg_id"`
-					Type   chat.MsgType `json:"type"`
-					Sum    string       `json:"sum"`
-				}{ChatID: msg.ChatID, MsgID: msg.MessageID, Type: msg.Type, Sum: sum},
+					ChatID         int64        `json:"chat_id"`
+					MsgID          int64        `json:"msg_id"`
+					Type           chat.MsgType `json:"type"`
+					SenderUsername string       `json:"sender_username"`
+					Sum            string       `json:"sum"`
+				}{ChatID: msg.ChatID, MsgID: msg.MessageID, Type: msg.Type, SenderUsername: senderUsername, Sum: sum},
 			})
 			if err != nil {
 				continue
@@ -211,23 +243,52 @@ func WithdrawMessage(c *fiber.Ctx) error {
 			logger.WithFields(logMsgFields).Errorf("websocket to send msg notification fail for chat %v", req.ChatID)
 			return
 		}
+		// 找到聊天中发消息人的 ChatUser 项
+		var senderChatUser *chat.ChatUser
 		for _, chatMember := range chatMembers {
+			if chatMember.UserID == userID {
+				senderChatUser = &chatMember
+			}
+		}
+		// 找到发送人的 User 项
+		senderUser, err := user.GetUserByID(db.GetDB(), userID)
+		if err != nil {
+			logger := logger2.GetLogger()
+			logger.WithFields(logMsgFields).Errorf("websocket to send msg notification fail for chat %v", req.ChatID)
+			return
+		}
+		for _, chatMember := range chatMembers {
+			// 获得消息通知中的名称
+			var senderUsername string
+			if senderChatUser != nil && senderChatUser.Alias != "" {
+				senderUsername = senderChatUser.Alias
+			} else {
+				// 获得好友项
+				friendEntry, err := user.GetFriendEntry(db.GetDB(), chatMember.UserID, userID)
+				if err != nil && friendEntry != nil && friendEntry.Alias != "" {
+					senderUsername = friendEntry.Alias
+				} else {
+					senderUsername = senderUser.NickName
+				}
+			}
 			err := ws.WriteToUser(chatMember.UserID, &struct {
 				Type int64 `json:"type"`
 				Msg  struct {
-					ChatID int64        `json:"chat_id"`
-					MsgID  int64        `json:"msg_id"`
-					Type   chat.MsgType `json:"type"`
-					Sum    string       `json:"sum"`
+					ChatID         int64        `json:"chat_id"`
+					MsgID          int64        `json:"msg_id"`
+					Type           chat.MsgType `json:"type"`
+					SenderUsername string       `json:"sender_username"`
+					Sum            string       `json:"sum"`
 				}
 			}{
 				Type: api.TypeAddNewMessage,
 				Msg: struct {
-					ChatID int64        `json:"chat_id"`
-					MsgID  int64        `json:"msg_id"`
-					Type   chat.MsgType `json:"type"`
-					Sum    string       `json:"sum"`
-				}{ChatID: msg.ChatID, MsgID: msg.MessageID, Type: msg.Type, Sum: msg.Message},
+					ChatID         int64        `json:"chat_id"`
+					MsgID          int64        `json:"msg_id"`
+					Type           chat.MsgType `json:"type"`
+					SenderUsername string       `json:"sender_username"`
+					Sum            string       `json:"sum"`
+				}{ChatID: msg.ChatID, MsgID: msg.MessageID, Type: msg.Type, SenderUsername: senderUsername, Sum: msg.Message},
 			})
 			if err != nil {
 				continue
