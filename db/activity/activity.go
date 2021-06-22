@@ -93,6 +93,8 @@ func GetActivitiesBefore(db *gorm.DB, userID int64, activityID int64, count int6
 	for _, friend := range friends {
 		friendIDs = append(friendIDs, friend.FriendID)
 	}
+	// 加入自己
+	friendIDs = append(friendIDs, userID)
 	tmp := db.Model(&Activity{}).Where("id < ? AND sender_id IN ?", activityID, friendIDs).
 		Preload("Media").Preload("Comments").Preload("ThumbUps").Order("id desc")
 	if count != 0 {
@@ -119,6 +121,8 @@ func GetActivitiesAfter(db *gorm.DB, userID int64, activityID int64, count int64
 	for _, friend := range friends {
 		friendIDs = append(friendIDs, friend.FriendID)
 	}
+	// 加入自己
+	friendIDs = append(friendIDs, userID)
 	tmp := db.Model(&Activity{}).Where("id > ? AND sender_id IN ?", activityID, friendIDs).
 		Preload("Media").Preload("Comments").Preload("ThumbUps").Order("id asc")
 	if count != 0 {
